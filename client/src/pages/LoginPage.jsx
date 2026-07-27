@@ -66,17 +66,17 @@ export default function LoginPage() {
             {/* Phone */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-1.5">
-                Phone Number
+                Username / Phone Number
               </label>
               <input
                 id="phone"
                 name="phone"
-                type="tel"
-                autoComplete="tel"
+                type="text"
+                autoComplete="username"
                 required
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="+91 98765 43210"
+                placeholder="Username or Phone Number"
                 className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm
                   focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all duration-200"
               />
