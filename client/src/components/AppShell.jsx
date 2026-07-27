@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -124,6 +125,7 @@ const NAV_GROUPS = [
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
 
   function handleLogout() {
     logout();
@@ -131,9 +133,34 @@ export default function AppShell({ children }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 print:bg-white print:text-black print:min-h-0 print:block">
-      {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="w-64 shrink-0 border-r border-slate-800/80 flex flex-col bg-slate-950/50 backdrop-blur-sm print:hidden h-full">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 print:bg-white print:text-black print:min-h-0 print:block flex-col md:flex-row">
+      {/* ── Mobile Top Bar ───────────────────────────────────────────── */}
+      <header className="flex md:hidden items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-slate-800/80 backdrop-blur-sm print:hidden shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center">
+            <svg className="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2zM15 8h2l3 3v5h-5V8z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-white text-xs font-semibold leading-tight">Smart Way Logistics</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </header>
+
+      {/* ── Desktop Sidebar ──────────────────────────────────────────── */}
+      <aside className="w-64 shrink-0 border-r border-slate-800/80 flex flex-col bg-slate-950/50 backdrop-blur-sm print:hidden h-full hidden md:flex">
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800/80">
           <div className="w-8 h-8 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center">
@@ -165,17 +192,17 @@ export default function AppShell({ children }) {
                   return (
                     <NavLink
                       key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                        isActive
-                          ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                      }`
-                    }
-                  >
-                    {item.icon}
-                    {item.label}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                          isActive
+                            ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        }`
+                      }
+                    >
+                      {item.icon}
+                      {item.label}
                     </NavLink>
                   );
                 })}
@@ -209,6 +236,106 @@ export default function AppShell({ children }) {
           </div>
         </div>
       </aside>
+
+      {/* ── Mobile Sidebar Modal Overlay ──────────────────────────────── */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden print:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Sidebar content */}
+          <aside className="relative w-64 max-w-xs bg-slate-950 flex flex-col h-full border-r border-slate-800">
+            {/* Close button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Logo */}
+            <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800/80">
+              <div className="w-8 h-8 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2zM15 8h2l3 3v5h-5V8z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white text-sm font-semibold leading-tight">Smart Way</p>
+                <p className="text-slate-500 text-xs">Logistics</p>
+              </div>
+            </div>
+
+            {/* Nav */}
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              {NAV_GROUPS.map((group, gi) => (
+                <div key={gi}>
+                  {group.label && (
+                    <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+                      {group.label}
+                    </p>
+                  )}
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      if (item.roles && (!user || !item.roles.includes(user.role))) return null;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          onClick={() => setIsOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                              isActive
+                                ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                            }`
+                          }
+                        >
+                          {item.icon}
+                          {item.label}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+
+            {/* User footer */}
+            <div className="px-3 py-4 border-t border-slate-800/80">
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60">
+                <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                  <span className="text-orange-400 text-xs font-bold">
+                    {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-xs font-medium truncate">{user?.name}</p>
+                  <p className="text-slate-500 text-xs capitalize">{user?.role}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  title="Sign out"
+                  className="text-slate-500 hover:text-red-400 transition-colors ml-1"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* ── Main content ─────────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto print:overflow-visible print:p-0">
