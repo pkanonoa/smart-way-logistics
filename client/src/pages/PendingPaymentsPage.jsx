@@ -103,11 +103,11 @@ export default function PendingPaymentsPage() {
                 </tr>
               ) : (
                 payments.map((p) => {
-                  const consignorsStr = p.waybill?.consignors?.map(c => c.name).join(', ') || '—';
+                  const consignorsStr = p.waybill?.consignor_name || '—';
                   const isOverdue = p.days_overdue > 0;
                   return (
                     <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="px-6 py-4">
+                       <td className="px-6 py-4">
                         <Link to={`/waybills/${p.waybill_id}`} className="font-mono text-orange-400 hover:text-orange-300 font-bold hover:underline">
                           {p.waybill?.waybill_number}
                         </Link>

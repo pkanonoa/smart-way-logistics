@@ -251,7 +251,7 @@ router.get('/senders/:id', async (req, res) => {
 
     const waybills = await prisma.waybill.findMany({
       where: {
-        consignors: { some: { id } }
+        assigned_staff: { some: { id } }
       },
       orderBy: { booking_date: 'desc' },
       include: { payment: true }
@@ -557,7 +557,7 @@ router.get('/staff/:id', async (req, res) => {
 
     // 1. Waybills shipped
     const waybills = await prisma.waybill.findMany({
-      where: { consignors: { some: { id } } },
+      where: { assigned_staff: { some: { id } } },
       orderBy: { booking_date: 'desc' }
     });
 

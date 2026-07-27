@@ -194,8 +194,8 @@ export default function DailyCollectionsPage() {
       const wb = dayWaybills.find(w => w.id === waybillId);
       if (wb) {
         setForm(prev => ({ ...prev, route: `${wb.from_location} to ${wb.to_location}` }));
-        if (wb.consignors && wb.consignors.length > 0) {
-          const staffObj = wb.consignors[0];
+        if (wb.assigned_staff && wb.assigned_staff.length > 0) {
+          const staffObj = wb.assigned_staff[0];
           setSelectedStaff(staffObj);
           setForm(prev => ({ ...prev, staff_id: staffObj.id }));
         }

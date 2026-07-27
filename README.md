@@ -86,6 +86,7 @@ curl -X POST http://localhost:3001/api/auth/login \
 | `admin`     | Full system access           |
 | `staff`     | Operations access            |
 | `accountant`| Financial access             |
+| `viewer`    | Read-only (GET requests only)|
 
 ## Protecting Routes (backend)
 

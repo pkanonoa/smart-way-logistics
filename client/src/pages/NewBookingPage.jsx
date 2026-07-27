@@ -95,8 +95,9 @@ function SuccessScreen({ waybill, onNewBooking }) {
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-5 mb-8 text-left space-y-2">
           <Row label="From"      value={waybill.from_location} />
           <Row label="To"        value={waybill.to_location} />
-          <Row label="Staff/Drivers" value={waybill.consignors?.map(c => c.name).join(', ') || '—'} />
+          <Row label="Consignor" value={waybill.consignor_name} />
           <Row label="Consignee" value={waybill.consignee_name} />
+          <Row label="Staff/Drivers" value={waybill.assigned_staff?.map(c => c.name).join(', ') || '—'} />
           <Row label="Packages"  value={`${waybill.no_of_packages} × ${waybill.package_type}`} />
           <Row label="Weight"    value={`${waybill.weight} kg`} />
           <Row label="Payment"   value={waybill.payment_mode?.toUpperCase()} />
@@ -154,21 +155,23 @@ function SuccessScreen({ waybill, onNewBooking }) {
           <div><strong>From:</strong> {waybill.from_location}</div>
           <div><strong>To:</strong> {waybill.to_location}</div>
           <div className="col-span-2">
+            <strong>Staff/Drivers:</strong> {waybill.assigned_staff?.map(c => c.name).join(', ') || '—'}
+          </div>
+          <div className="col-span-2">
             <strong>E-Way Bill:</strong> {waybill.eway_bill_number ? waybill.eway_bill_number : waybill.eway_bill_required ? 'REQUIRED - NOT ADDED' : 'Not Required'}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 border border-gray-300 rounded p-4 mb-4 text-sm">
           <div>
-            <p className="font-bold text-xs uppercase mb-1">Staff/Drivers</p>
-            {waybill.consignors?.map(c => (
-              <div key={c.id} className="mb-1">
-                <p>{c.name} ({c.phone})</p>
-              </div>
-            ))}
+            <p className="font-bold text-xs uppercase mb-1">Consignor (Sender)</p>
+            <p className="font-semibold">{waybill.consignor_name}</p>
+            <p>{waybill.consignor_contact}</p>
+            {waybill.consignor_gst && <p>GST: {waybill.consignor_gst}</p>}
+            <p className="text-xs text-gray-600 mt-1">{waybill.consignor_address}</p>
           </div>
           <div>
-            <p className="font-bold text-xs uppercase mb-1">Consignee</p>
-            <p>{waybill.consignee_name}</p>
+            <p className="font-bold text-xs uppercase mb-1">Consignee (Receiver)</p>
+            <p className="font-semibold">{waybill.consignee_name}</p>
             <p>{waybill.consignee_mobile}</p>
             {waybill.consignee_gst && <p>GST: {waybill.consignee_gst}</p>}
             <p className="text-xs text-gray-600 mt-1">{waybill.consignee_address}</p>
@@ -218,6 +221,10 @@ const EMPTY = {
   booking_date:      today(),
   from_location:     '',
   to_location:       '',
+  consignor_name:    '',
+  consignor_contact: '',
+  consignor_address: '',
+  consignor_gst:     '',
   consignee_name:    '',
   consignee_mobile:  '',
   consignee_address: '',
@@ -264,6 +271,9 @@ export default function NewBookingPage() {
     if (consignors.filter(Boolean).length === 0) e.consignors = 'At least one Staff/Driver is required';
     if (!form.from_location.trim())        e.from_location     = 'Required';
     if (!form.to_location.trim())          e.to_location       = 'Required';
+    if (!form.consignor_name.trim())       e.consignor_name    = 'Required';
+    if (!form.consignor_contact.trim())    e.consignor_contact = 'Required';
+    if (!form.consignor_address.trim())    e.consignor_address = 'Required';
     if (!form.consignee_name.trim())       e.consignee_name    = 'Required';
     if (!form.consignee_mobile.trim()) {
       e.consignee_mobile = 'Required';
@@ -294,7 +304,7 @@ export default function NewBookingPage() {
     try {
       const waybill = await createWaybill({
         ...form,
-        consignor_staff_ids: consignors.filter(Boolean).map(c => c.id),
+        assigned_staff_ids: consignors.filter(Boolean).map(c => c.id),
         no_of_packages: parseInt(form.no_of_packages),
         weight:         parseFloat(form.weight),
         volume:         form.volume ? parseFloat(form.volume) : undefined,
@@ -372,13 +382,44 @@ export default function NewBookingPage() {
           </div>
         </Section>
 
-        {/* ── Section 2: Consignor ─────────────────────────────── */}
-        <Section title="Consignor (staff)" icon={
+        {/* ── Section 2: Consignor (Sender) ─────────────────────── */}
+        <Section title="Consignor (Sender Company)" icon={
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        }>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Business Name" required error={errors.consignor_name}>
+              <input name="consignor_name" value={form.consignor_name} onChange={handleChange}
+                placeholder="Sender company name" className={inputCls(errors.consignor_name)} />
+            </Field>
+            <Field label="Contact Person" required error={errors.consignor_contact}>
+              <input name="consignor_contact" value={form.consignor_contact} onChange={handleChange}
+                placeholder="Sender contact name/mobile" className={inputCls(errors.consignor_contact)} />
+            </Field>
+          </div>
+          <div className="mt-4">
+            <Field label="Pickup Address" required error={errors.consignor_address}>
+              <textarea name="consignor_address" value={form.consignor_address} onChange={handleChange}
+                rows={2} placeholder="Full pickup address"
+                className={`${inputCls(errors.consignor_address)} resize-none`} />
+            </Field>
+          </div>
+          <div className="mt-4">
+            <Field label="Tax / Identification Number (GST)">
+              <input name="consignor_gst" value={form.consignor_gst} onChange={handleChange}
+                placeholder="Optional GSTIN" className={inputCls()} />
+            </Field>
+          </div>
+        </Section>
+
+        {/* ── Section 2.5: Assigned Staff / Drivers ─────────────── */}
+        <Section title="Assigned Staff / Drivers" icon={
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         }>
-          <Field label="Assigned Staff / Drivers" required error={errors.consignors}>
+          <Field label="Delivery Team" required error={errors.consignors}>
             <div className="space-y-4">
               {consignors.map((consignor, index) => (
                 <div key={index} className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 relative">

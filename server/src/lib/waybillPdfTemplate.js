@@ -7,7 +7,7 @@ function generateWaybillHtml(waybill, isDuplicate = false) {
   const fmt = (n) => Number(n || 0).toFixed(2);
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-  const consignors = waybill.consignors || [];
+  const assignedStaff = waybill.assigned_staff || [];
   const payment = waybill.payment || {};
   const mode = (waybill.payment_mode || '').toLowerCase();
 
@@ -25,11 +25,14 @@ function generateWaybillHtml(waybill, isDuplicate = false) {
        </div>`
     : `<div class="eway-box eway-missing">No E-Way Bill${Number(waybill.grand_total) >= 50000 ? ' — <strong>REQUIRED</strong>' : ''}</div>`;
 
-  const consignorText = consignors.length > 0
-    ? consignors.map(c =>
-        `<div class="party-row"><b>${c.name}</b><br>${c.phone || ''}${c.address ? `<br><span class="party-addr">${c.address}</span>` : ''}</div>`
-      ).join('<hr class="party-sep">')
-    : '<em class="muted">Not assigned</em>';
+  const consignorText = `
+    <div class="party-row">
+      <b>${waybill.consignor_name || '—'}</b><br>
+      ${waybill.consignor_contact || '—'}
+      ${waybill.consignor_address ? `<br><span class="party-addr">${waybill.consignor_address}</span>` : ''}
+      ${waybill.consignor_gst ? `<div class="party-gst">GST: ${waybill.consignor_gst}</div>` : ''}
+    </div>
+  `;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -176,7 +179,7 @@ ${ewayRow}
   <div class="parties">
     <div class="parties-grid">
       <div class="party-box">
-        <div class="party-box-label">CONSIGNOR (SENDER / DRIVER)</div>
+        <div class="party-box-label">CONSIGNOR (SENDER)</div>
         ${consignorText}
       </div>
       <div class="party-box">
@@ -239,6 +242,12 @@ ${ewayRow}
   ${checkBox('PAID', mode === 'paid')}
   ${checkBox('TO PAY', mode === 'topay')}
   ${checkBox('CREDIT', mode === 'credit')}
+</div>
+
+<!-- Assigned Staff / Drivers -->
+<div style="display: flex; align-items: center; gap: 12px; border: 1.5px solid #1a1a1a; padding: 6px 12px; margin-bottom: 8px;">
+  <span class="payment-label" style="margin-right: 8px;">ASSIGNED STAFF/DRIVERS</span>
+  <span style="font-size: 11px; font-weight: 600;">${assignedStaff.map(s => `${s.name} (${s.phone})`).join(', ') || '—'}</span>
 </div>
 
 <!-- Declaration -->

@@ -16,7 +16,7 @@ router.get('/pending', async (req, res) => {
       include: {
         waybill: {
           include: {
-            consignors: { select: { id: true, name: true, phone: true } }
+            assigned_staff: { select: { id: true, name: true, phone: true } }
           }
         }
       },
@@ -52,13 +52,13 @@ router.get('/pending', async (req, res) => {
 });
 
 // ─── GET /api/senders/:id/payments ────────────────────────────────────────────
-// In this schema, consignors (Staff) act as senders of the waybills
+// In this schema, assigned_staff (Staff) act as the delivery team of the waybills
 router.get('/senders/:id/payments', async (req, res) => {
   try {
     const payments = await prisma.payment.findMany({
       where: {
         waybill: {
-          consignors: {
+          assigned_staff: {
             some: { id: req.params.id }
           }
         }
@@ -106,7 +106,7 @@ router.put('/:id/settle', [
       include: {
         waybill: {
           include: {
-            consignors: { select: { id: true, name: true } }
+            assigned_staff: { select: { id: true, name: true } }
           }
         }
       }

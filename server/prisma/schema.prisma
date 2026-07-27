@@ -95,7 +95,7 @@ model Staff {
   address            String
   created_at         DateTime   @default(now())
 
-  waybills_as_consignor Waybill[]    @relation("WaybillConsignor")
+  assigned_waybills Waybill[]    @relation("WaybillStaff")
   attendances           Attendance[]
   salary_weeks          SalaryWeek[]
   advances              StaffAdvance[]
@@ -218,7 +218,12 @@ model Waybill {
   from_location String
   to_location   String
 
-  consignors         Staff[]  @relation("WaybillConsignor")
+  consignor_name    String?
+  consignor_contact String?
+  consignor_address String?
+  consignor_gst     String?
+
+  assigned_staff     Staff[]  @relation("WaybillStaff")
 
   consignee_name    String
   consignee_mobile  String

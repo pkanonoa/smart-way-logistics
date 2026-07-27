@@ -410,7 +410,7 @@ export default function WaybillDetailsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Route Details */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -439,6 +439,31 @@ export default function WaybillDetailsPage() {
           </div>
         </div>
 
+        {/* Consignor */}
+        <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
+          <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+            Consignor (Sender)
+          </h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Business Name</span>
+              <span className="text-white font-medium truncate max-w-[120px]" title={waybill.consignor_name}>{waybill.consignor_name || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Contact Person</span>
+              <span className="text-white font-medium">{waybill.consignor_contact || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">GSTIN / Tax ID</span>
+              <span className="text-white">{waybill.consignor_gst || '—'}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 block mb-1">Pickup Address</span>
+              <p className="text-slate-300 bg-slate-800/40 p-3 rounded-xl text-xs line-clamp-2 h-14 overflow-y-auto">{waybill.consignor_address || '—'}</p>
+            </div>
+          </div>
+        </div>
+
         {/* Consignee */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
           <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -447,7 +472,7 @@ export default function WaybillDetailsPage() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-400">Name</span>
-              <span className="text-white font-medium">{waybill.consignee_name}</span>
+              <span className="text-white font-medium truncate max-w-[120px]" title={waybill.consignee_name}>{waybill.consignee_name}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Mobile</span>
@@ -459,23 +484,23 @@ export default function WaybillDetailsPage() {
             </div>
             <div>
               <span className="text-slate-400 block mb-1">Address</span>
-              <p className="text-slate-300 bg-slate-800/40 p-3 rounded-xl">{waybill.consignee_address}</p>
+              <p className="text-slate-300 bg-slate-800/40 p-3 rounded-xl text-xs line-clamp-2 h-14 overflow-y-auto">{waybill.consignee_address}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Consignor / Staff */}
+      {/* Assigned Staff / Drivers */}
       <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 mt-6">
         <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          Consignor (Staff / Drivers)
+          Assigned Staff / Drivers
         </h3>
-        {waybill.consignors && waybill.consignors.length > 0 ? (
+        {waybill.assigned_staff && waybill.assigned_staff.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {waybill.consignors.map((c) => (
+            {waybill.assigned_staff.map((c) => (
               <div key={c.id} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl px-4 py-3">
                 <div className="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
                   <span className="text-orange-400 text-sm font-bold">{c.name?.charAt(0)?.toUpperCase()}</span>

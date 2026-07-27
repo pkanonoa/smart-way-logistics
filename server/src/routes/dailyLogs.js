@@ -54,11 +54,11 @@ router.get('/', [
       where: {
         booking_date: { gte: startOfDay, lte: endOfDay }
       },
-      include: { consignors: { select: { id: true } } }
+      include: { assigned_staff: { select: { id: true } } }
     });
     const wbMap = {};
     waybills.forEach(wb => {
-      wb.consignors.forEach(c => {
+      wb.assigned_staff.forEach(c => {
         if (!wbMap[c.id]) wbMap[c.id] = [];
         wbMap[c.id].push(wb.waybill_number);
       });

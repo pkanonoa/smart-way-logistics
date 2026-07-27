@@ -34,8 +34,11 @@ async function nextWaybillNumber(tx) {
 router.post('/', requireRole('admin', 'staff'), [
   body('from_location').trim().notEmpty(),
   body('to_location').trim().notEmpty(),
-  body('consignor_staff_ids').isArray({ min: 1 }).withMessage('At least one staff member is required'),
-  body('consignor_staff_ids.*').notEmpty(),
+  body('consignor_name').trim().notEmpty().withMessage('Consignor name (Business Name) is required'),
+  body('consignor_contact').trim().notEmpty().withMessage('Consignor contact (Contact Person) is required'),
+  body('consignor_address').trim().notEmpty().withMessage('Consignor address (Pickup Address) is required'),
+  body('assigned_staff_ids').isArray({ min: 1 }).withMessage('At least one staff member is required'),
+  body('assigned_staff_ids.*').notEmpty(),
   body('consignee_name').trim().notEmpty(),
   body('consignee_mobile')
     .trim()
@@ -51,7 +54,9 @@ router.post('/', requireRole('admin', 'staff'), [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const { booking_date, from_location, to_location, consignor_staff_ids,
+  const { booking_date, from_location, to_location,
+    consignor_name, consignor_contact, consignor_address, consignor_gst,
+    assigned_staff_ids,
     consignee_name, consignee_mobile, consignee_address, consignee_gst,
     no_of_packages, package_type, weight, volume, description,
     freight, handling_charges, sgst, cgst, igst, payment_mode,
@@ -62,8 +67,8 @@ router.post('/', requireRole('admin', 'staff'), [
   try {
     const waybill = await prisma.$transaction(async (tx) => {
       // Validate all staff exist
-      const staffs = await tx.staff.findMany({ where: { id: { in: consignor_staff_ids } } });
-      if (staffs.length !== consignor_staff_ids.length) throw Object.assign(new Error('One or more staff not found'), { code: 'NOT_FOUND' });
+      const staffs = await tx.staff.findMany({ where: { id: { in: assigned_staff_ids } } });
+      if (staffs.length !== assigned_staff_ids.length) throw Object.assign(new Error('One or more staff not found'), { code: 'NOT_FOUND' });
       
       const bDate = booking_date ? new Date(booking_date) : new Date();
       
@@ -88,8 +93,12 @@ router.post('/', requireRole('admin', 'staff'), [
         data: {
           waybill_number, booking_date: bDate,
           from_location: from_location.trim(), to_location: to_location.trim(),
-          consignors: {
-            connect: consignor_staff_ids.map(id => ({ id }))
+          consignor_name: consignor_name.trim(),
+          consignor_contact: consignor_contact.trim(),
+          consignor_address: consignor_address.trim(),
+          consignor_gst: consignor_gst?.trim() || null,
+          assigned_staff: {
+            connect: assigned_staff_ids.map(id => ({ id }))
           },
           consignee_name: consignee_name.trim(), consignee_mobile: consignee_mobile.trim(),
           consignee_address: consignee_address.trim(), consignee_gst: consignee_gst?.trim() || null,
@@ -105,7 +114,7 @@ router.post('/', requireRole('admin', 'staff'), [
             create: paymentData
           }
         },
-        include: { consignors: true, creator: { select: { id: true, name: true } }, payment: true },
+        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
       });
     });
     return res.status(201).json({ message: 'Waybill created', waybill: mapWaybillResponse(waybill) });
@@ -136,7 +145,7 @@ router.get('/', async (req, res) => {
       where.eway_bill_number = null;
       where.status = { not: 'delivered' };
     }
-    if (staffId) where.consignors = { some: { id: staffId } };
+    if (staffId) where.assigned_staff = { some: { id: staffId } };
     if (startDate || endDate) {
       where.booking_date = {};
       if (startDate) where.booking_date.gte = new Date(startDate);
@@ -147,7 +156,7 @@ router.get('/', async (req, res) => {
         { booking_date: 'desc' },
         { created_at: 'desc' }
       ],
-      include: { consignors: { select: { id: true, name: true, phone: true, address: true } }, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: { select: { id: true, name: true, phone: true, address: true } }, creator: { select: { id: true, name: true } }, payment: true },
     });
     return res.status(200).json({ waybills: waybills.map(mapWaybillResponse) });
   } catch (err) {
@@ -161,7 +170,7 @@ router.get('/:id', async (req, res) => {
   try {
     const waybill = await prisma.waybill.findUnique({
       where: { id: req.params.id },
-      include: { consignors: true, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
     return res.status(200).json({ waybill: mapWaybillResponse(waybill) });
@@ -189,12 +198,21 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
     const { from_location, to_location, consignee_name, consignee_mobile, consignee_address,
       consignee_gst, no_of_packages, package_type, weight, volume, description, payment_mode, status,
       eway_bill_number, eway_bill_valid_until,
-      payment_status, payment_due_date, payment_paid_date, payment_method } = req.body;
+      payment_status, payment_due_date, payment_paid_date, payment_method,
+      consignor_name, consignor_contact, consignor_address, consignor_gst, assigned_staff_ids } = req.body;
 
     const waybill = await prisma.waybill.update({
       where: { id: req.params.id },
       data: {
         ...(from_location && { from_location }), ...(to_location && { to_location }),
+        ...(consignor_name && { consignor_name }), ...(consignor_contact && { consignor_contact }),
+        ...(consignor_address && { consignor_address }),
+        ...(consignor_gst !== undefined && { consignor_gst: consignor_gst || null }),
+        ...(assigned_staff_ids && {
+          assigned_staff: {
+            set: assigned_staff_ids.map(id => ({ id }))
+          }
+        }),
         ...(consignee_name && { consignee_name }), ...(consignee_mobile && { consignee_mobile }),
         ...(consignee_address && { consignee_address }),
         ...(consignee_gst !== undefined && { consignee_gst: consignee_gst || null }),
@@ -225,7 +243,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
           }
         })
       },
-      include: { consignors: true, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
     });
     return res.status(200).json({ message: 'Waybill updated', waybill: mapWaybillResponse(waybill) });
   } catch (err) {
@@ -271,7 +289,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       const waybill = await tx.waybill.update({
         where: { id: existing.id },
         data: { status },
-        include: { consignors: true, creator: { select: { id: true, name: true } }, payment: true }
+        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true }
       });
 
       // 3. Update payment details
@@ -376,7 +394,7 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
     const waybill = await prisma.waybill.findUnique({
       where: { id: req.params.id },
       include: {
-        consignors: { select: { id: true, name: true, phone: true, address: true } },
+        assigned_staff: { select: { id: true, name: true, phone: true, address: true } },
         creator: { select: { id: true, name: true } },
         payment: true,
       },
