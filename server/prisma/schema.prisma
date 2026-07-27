@@ -1,0 +1,328 @@
+// Smart Way Logistics — Prisma Schema
+// learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  admin
+  staff
+  accountant
+  viewer
+}
+
+enum StaffRole {
+  driver
+  staff
+  office_staff
+  other
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  half_day
+}
+
+enum SalaryAdjustmentType {
+  incentive
+  bonus
+  deduction
+  advance_recovery
+  other
+}
+
+enum PaymentMode {
+  paid
+  topay
+  credit
+}
+
+enum PaymentStatus {
+  paid
+  pending
+  credit
+}
+
+enum WaybillStatus {
+  booked
+  loaded
+  in_transit
+  arrived
+  out_for_delivery
+  delivered
+  returned
+}
+
+
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  phone         String    @unique
+  password_hash String
+  role          Role      @default(staff)
+  created_at    DateTime  @default(now())
+
+  waybills      Waybill[] @relation("WaybillCreator")
+  salary_adjustments SalaryAdjustment[] @relation("AdjustmentCreator")
+  salary_payments    SalaryPayment[]    @relation("PaymentCreator")
+  staff_advances     StaffAdvance[]     @relation("AdvanceCreator")
+  parcel_tracking    ParcelTracking[]   @relation("TrackingUpdater")
+
+  @@map("users")
+}
+
+// ─── Staff ──────────────────────────────────────────────────────────────────
+
+model Staff {
+  id                 String     @id @default(uuid())
+  name               String
+  phone              String     @unique @map("mobile")
+  role               StaffRole  @default(staff)
+  role_other_specify String?    @map("role_other")
+  address            String
+  created_at         DateTime   @default(now())
+
+  waybills_as_consignor Waybill[]    @relation("WaybillConsignor")
+  attendances           Attendance[]
+  salary_weeks          SalaryWeek[]
+  advances              StaffAdvance[]
+  collections           DailyCollection[]
+
+  @@map("staff")
+}
+
+// ─── Attendance ──────────────────────────────────────────────────────────────
+
+model Attendance {
+  id         String           @id @default(uuid())
+  staff_id   String
+  staff      Staff            @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  status     AttendanceStatus
+
+  @@unique([staff_id, date])
+  @@map("attendance")
+}
+
+// ─── Salaries ─────────────────────────────────────────────────────────────────
+
+model SalaryWeek {
+  id              String   @id @default(uuid())
+  staff_id        String
+  staff           Staff    @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+  week_start_date DateTime @db.Date
+  week_end_date   DateTime @db.Date
+  base_amount     Decimal  @db.Decimal(10, 2)
+  created_at      DateTime @default(now())
+
+  adjustments SalaryAdjustment[]
+  payments    SalaryPayment[]
+
+  @@unique([staff_id, week_start_date])
+  @@map("salary_weeks")
+}
+
+model SalaryAdjustment {
+  id             String               @id @default(uuid())
+  salary_week_id String
+  salary_week    SalaryWeek           @relation(fields: [salary_week_id], references: [id], onDelete: Cascade)
+  type           SalaryAdjustmentType
+  amount         Decimal              @db.Decimal(10, 2)
+  reason         String
+  added_by       String
+  user           User                 @relation("AdjustmentCreator", fields: [added_by], references: [id])
+  created_at     DateTime             @default(now())
+
+  advance_id     String?              @unique
+  advance        StaffAdvance?        @relation(fields: [advance_id], references: [id])
+
+  @@map("salary_adjustments")
+}
+
+model SalaryPayment {
+  id             String     @id @default(uuid())
+  salary_week_id String
+  salary_week    SalaryWeek @relation(fields: [salary_week_id], references: [id], onDelete: Cascade)
+  amount         Decimal    @db.Decimal(10, 2)
+  payment_date   DateTime   @db.Date
+  notes          String?
+  paid_by        String
+  user           User       @relation("PaymentCreator", fields: [paid_by], references: [id])
+  created_at     DateTime   @default(now())
+
+  @@map("salary_payments")
+}
+
+// ─── Staff Advances ───────────────────────────────────────────────────────────
+
+model StaffAdvance {
+  id           String   @id @default(uuid())
+  staff_id     String
+  staff        Staff    @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+  amount       Decimal  @db.Decimal(10, 2)
+  date         DateTime @db.Date
+  reason       String
+  is_recovered Boolean  @default(false)
+  added_by     String
+  user         User     @relation("AdvanceCreator", fields: [added_by], references: [id])
+  created_at   DateTime @default(now())
+
+  salary_adjustment SalaryAdjustment?
+
+  @@map("staff_advances")
+}
+
+// ─── Vehicles ─────────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id                String    @id @default(uuid())
+  vehicle_number    String    @unique
+  vehicle_name      String
+  insurance_expiry  DateTime? @db.Date
+  rc_expiry         DateTime? @db.Date
+  pollution_expiry  DateTime? @db.Date
+  last_service_date DateTime? @db.Date
+  collections       DailyCollection[]
+
+  @@map("vehicles")
+}
+
+// ─── Waybills ─────────────────────────────────────────────────────────────────
+
+/// Single-row counter for auto-incrementing waybill numbers (e.g. SWL501)
+model WaybillCounter {
+  id  Int @id
+  seq Int
+
+  @@map("waybill_counter")
+}
+
+model Waybill {
+  id             String        @id @default(uuid())
+  waybill_number String        @unique
+
+  booking_date  DateTime @default(now())
+  from_location String
+  to_location   String
+
+  consignors         Staff[]  @relation("WaybillConsignor")
+
+  consignee_name    String
+  consignee_mobile  String
+  consignee_address String
+  consignee_gst     String?
+
+  no_of_packages Int
+  package_type   String
+  weight         Decimal  @db.Decimal(10, 3)
+  volume         Decimal? @db.Decimal(10, 3)
+  description    String?
+
+  freight          Decimal @db.Decimal(10, 2)
+  handling_charges Decimal @default(0) @db.Decimal(10, 2)
+  sgst             Decimal @default(0) @db.Decimal(10, 2)
+  cgst             Decimal @default(0) @db.Decimal(10, 2)
+  igst             Decimal @default(0) @db.Decimal(10, 2)
+  grand_total      Decimal @db.Decimal(10, 2)
+
+  payment_mode PaymentMode
+  status       WaybillStatus @default(booked)
+
+  eway_bill_number      String?
+  eway_bill_valid_until DateTime? @db.Date
+
+  payment   Payment?
+  tracking  ParcelTracking[]
+
+  daily_collection_id String?
+  daily_collection    DailyCollection? @relation(fields: [daily_collection_id], references: [id], onDelete: SetNull)
+
+  created_by String
+  creator    User     @relation("WaybillCreator", fields: [created_by], references: [id])
+  created_at DateTime @default(now())
+
+  @@index([booking_date])
+  @@index([status])
+  @@map("waybills")
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id             String        @id @default(uuid())
+  waybill_id     String        @unique
+  waybill        Waybill       @relation(fields: [waybill_id], references: [id], onDelete: Cascade)
+  amount         Decimal       @db.Decimal(10, 2)
+  status         PaymentStatus
+  due_date       DateTime?     @db.Date
+  paid_date      DateTime?     @db.Date
+  payment_method String?
+
+  @@map("payments")
+}
+
+// ─── Parcel Tracking ──────────────────────────────────────────────────────────────
+
+model ParcelTracking {
+  id         String        @id @default(uuid())
+  waybill_id String
+  waybill    Waybill       @relation(fields: [waybill_id], references: [id], onDelete: Cascade)
+  status     WaybillStatus
+  location   String?
+  remarks    String?
+  updated_by String
+  user       User          @relation("TrackingUpdater", fields: [updated_by], references: [id])
+  timestamp  DateTime      @default(now())
+
+  @@index([waybill_id])
+  @@map("parcel_tracking")
+}
+
+// ─── Daily Collection Register ───────────────────────────────────────────────
+
+model DailyCollection {
+  id               String   @id @default(uuid())
+  date             DateTime @db.Date
+  staff_id         String
+  staff            Staff    @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+  vehicle_id       String
+  vehicle          Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  route            String
+  start_km         Int
+  end_km           Int
+  total_km         Int
+  fuel_expense     Decimal  @db.Decimal(10, 2)
+  vehicle_rent     Decimal  @db.Decimal(10, 2)
+  driver_wage      Decimal  @db.Decimal(10, 2)
+  helper_wage      Decimal  @db.Decimal(10, 2)
+  advance          Decimal  @db.Decimal(10, 2)
+  other_expenses   Decimal  @db.Decimal(10, 2)
+  cash_collection  Decimal  @db.Decimal(10, 2)
+  upi_collection   Decimal  @db.Decimal(10, 2)
+  credit_collection Decimal @db.Decimal(10, 2)
+  total_collection Decimal  @db.Decimal(10, 2)
+  total_expense    Decimal  @db.Decimal(10, 2)
+  balance          Decimal  @db.Decimal(10, 2)
+  created_at       DateTime @default(now())
+
+  waybills         Waybill[]
+
+  @@index([date])
+  @@index([vehicle_id])
+  @@map("daily_collections")
+}
+
+
