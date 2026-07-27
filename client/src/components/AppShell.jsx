@@ -135,7 +135,15 @@ export default function AppShell({ children }) {
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 print:bg-white print:text-black print:min-h-0 print:block flex-col md:flex-row">
       {/* ── Mobile Top Bar ───────────────────────────────────────────── */}
-      <header className="flex md:hidden items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-slate-800/80 backdrop-blur-sm print:hidden shrink-0">
+      <header className="flex md:hidden items-center gap-3 px-4 py-3 bg-slate-950/80 border-b border-slate-800/80 backdrop-blur-sm print:hidden shrink-0">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center">
             <svg className="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,14 +157,6 @@ export default function AppShell({ children }) {
             <p className="text-white text-xs font-semibold leading-tight">Smart Way Logistics</p>
           </div>
         </div>
-        <button
-          onClick={() => setIsOpen(true)}
-          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
       </header>
 
       {/* ── Desktop Sidebar ──────────────────────────────────────────── */}
