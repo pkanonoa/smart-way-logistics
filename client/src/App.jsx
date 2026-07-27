@@ -72,7 +72,7 @@ export default function App() {
           <Route path="/users"        element={<AdminShellRoute><UserManagementPage /></AdminShellRoute>} />
 
           {/* Default redirects */}
-          <Route path="/"  element={<Navigate to="/waybills" replace />} />
+          <Route path="/"  element={<Navigate to="/dashboard" replace />} />
           <Route path="*"  element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
