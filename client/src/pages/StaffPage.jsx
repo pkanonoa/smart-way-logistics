@@ -195,7 +195,6 @@ export default function StaffPage() {
                             <Link to={`/staff/${c.id}`} className="text-white font-medium hover:text-orange-400 transition-colors">
                               {c.name}
                             </Link>
-                            <p className="text-slate-500 text-xs truncate">{c.address}</p>
                           </div>
                         </div>
                       </td>

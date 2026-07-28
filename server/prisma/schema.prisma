@@ -92,7 +92,6 @@ model Staff {
   phone              String     @unique @map("mobile")
   role               StaffRole  @default(staff)
   role_other_specify String?    @map("role_other")
-  address            String
   created_at         DateTime   @default(now())
 
   assigned_waybills Waybill[]    @relation("WaybillStaff")
