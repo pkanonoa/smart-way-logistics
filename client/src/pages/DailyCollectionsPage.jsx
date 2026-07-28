@@ -21,7 +21,8 @@ const INITIAL_FORM = {
   route: '',
   start_km: '',
   end_km: '',
-  fuel_expense: '',
+  fuel_expense_cash: '0',
+  fuel_expense_owner: '0',
   vehicle_rent: '',
   driver_wage: '',
   helper_wage: '',
@@ -123,20 +124,22 @@ export default function DailyCollectionsPage() {
   const endKm = parseInt(form.end_km || 0);
   const totalKm = Math.max(0, endKm - startKm);
 
-  const fuel = parseFloat(form.fuel_expense || 0);
+  const fuelCash = parseFloat(form.fuel_expense_cash || 0);
+  const fuelOwner = parseFloat(form.fuel_expense_owner || 0);
   const rent = parseFloat(form.vehicle_rent || 0);
   const driver = parseFloat(form.driver_wage || 0);
   const helper = parseFloat(form.helper_wage || 0);
   const adv = parseFloat(form.advance || 0);
   const other = parseFloat(form.other_expenses || 0);
-  const totalExpense = fuel + rent + driver + helper + adv + other;
+  const totalExpense = fuelCash + fuelOwner + rent + driver + helper + adv + other;
 
   const cash = parseFloat(form.cash_collection || 0);
   const upi = parseFloat(form.upi_collection || 0);
   const credit = parseFloat(form.credit_collection || 0);
   const totalCollection = cash + upi + credit;
 
-  const balance = totalCollection - totalExpense;
+  const balance = totalCollection - (fuelCash + rent + driver + helper + adv + other);
+  const owedToOwner = fuelOwner;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -214,6 +217,12 @@ export default function DailyCollectionsPage() {
     if (parseInt(form.end_km) < parseInt(form.start_km)) {
       newErrors.end_km = 'End KM cannot be less than Start KM';
     }
+    if (form.fuel_expense_cash !== '' && parseFloat(form.fuel_expense_cash) < 0) {
+      newErrors.fuel_expense_cash = 'Cannot be negative';
+    }
+    if (form.fuel_expense_owner !== '' && parseFloat(form.fuel_expense_owner) < 0) {
+      newErrors.fuel_expense_owner = 'Cannot be negative';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -236,7 +245,8 @@ export default function DailyCollectionsPage() {
       route: rec.route,
       start_km: rec.start_km.toString(),
       end_km: rec.end_km.toString(),
-      fuel_expense: rec.fuel_expense.toString(),
+      fuel_expense_cash: rec.fuel_expense_cash ? rec.fuel_expense_cash.toString() : '0',
+      fuel_expense_owner: rec.fuel_expense_owner ? rec.fuel_expense_owner.toString() : '0',
       vehicle_rent: rec.vehicle_rent.toString(),
       driver_wage: rec.driver_wage.toString(),
       helper_wage: rec.helper_wage.toString(),
@@ -263,7 +273,8 @@ export default function DailyCollectionsPage() {
         ...form,
         start_km: parseInt(form.start_km),
         end_km: parseInt(form.end_km),
-        fuel_expense: parseFloat(form.fuel_expense || 0),
+        fuel_expense_cash: parseFloat(form.fuel_expense_cash || 0),
+        fuel_expense_owner: parseFloat(form.fuel_expense_owner || 0),
         vehicle_rent: parseFloat(form.vehicle_rent || 0),
         driver_wage: parseFloat(form.driver_wage || 0),
         helper_wage: parseFloat(form.helper_wage || 0),
@@ -661,18 +672,38 @@ export default function DailyCollectionsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left: Expenses */}
                 <div className="bg-slate-950/20 border border-slate-800 rounded-2xl p-5 space-y-4">
-                  <h4 className="text-xs font-semibold text-orange-400 uppercase tracking-widest border-b border-slate-800 pb-2">Trip Expenses</h4>
+                  <h4 className="text-xs font-semibold text-orange-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex justify-between items-center">
+                    <span>Trip Expenses</span>
+                    <span className="text-[10px] text-slate-400 lowercase font-normal normal-case">
+                      Total Fuel: {INR(parseFloat(form.fuel_expense_cash || 0) + parseFloat(form.fuel_expense_owner || 0))}
+                    </span>
+                  </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Fuel Expense (₹)</label>
+                      <label className="block text-xs text-slate-400 mb-1">From Cash Fund (₹)</label>
                       <input
                         type="number"
-                        name="fuel_expense"
-                        value={form.fuel_expense}
+                        step="any"
+                        name="fuel_expense_cash"
+                        value={form.fuel_expense_cash}
                         onChange={handleInputChange}
                         placeholder="0.00"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                        className={`w-full bg-slate-800 border ${errors.fuel_expense_cash ? 'border-red-500/50' : 'border-slate-700'} rounded-xl px-3 py-2 text-white text-sm text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50`}
                       />
+                      {errors.fuel_expense_cash && <p className="text-red-400 text-[10px] mt-1">{errors.fuel_expense_cash}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Paid by Owner (₹)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        name="fuel_expense_owner"
+                        value={form.fuel_expense_owner}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        className={`w-full bg-slate-800 border ${errors.fuel_expense_owner ? 'border-red-500/50' : 'border-slate-700'} rounded-xl px-3 py-2 text-white text-sm text-right focus:outline-none focus:ring-2 focus:ring-orange-500/50`}
+                      />
+                      {errors.fuel_expense_owner && <p className="text-red-400 text-[10px] mt-1">{errors.fuel_expense_owner}</p>}
                     </div>
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Vehicle Rent (₹)</label>
@@ -777,7 +808,7 @@ export default function DailyCollectionsPage() {
 
               {/* Summary Footer */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex gap-8 text-center sm:text-left flex-wrap justify-center sm:justify-start">
+                <div className="flex gap-6 text-center sm:text-left flex-wrap justify-center sm:justify-start">
                   <div>
                     <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Total Collections</span>
                     <p className="text-white text-lg font-bold mt-0.5">{INR(totalCollection)}</p>
@@ -787,8 +818,12 @@ export default function DailyCollectionsPage() {
                     <p className="text-white text-lg font-bold mt-0.5">{INR(totalExpense)}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Net Balance</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Net Balance (Cash Fund)</span>
                     <p className={`text-xl font-black mt-0.5 ${balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{INR(balance)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Owed to Owner</span>
+                    <p className="text-orange-400 text-lg font-bold mt-0.5">{INR(owedToOwner)}</p>
                   </div>
                 </div>
 
@@ -861,7 +896,8 @@ export default function DailyCollectionsPage() {
                 <div className="bg-slate-950/20 border border-slate-800 rounded-xl p-4 space-y-3">
                   <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider pb-2 border-b border-slate-800">Trip Expenses</h4>
                   <div className="space-y-2 text-xs">
-                    <div className="flex justify-between"><span className="text-slate-400">Fuel Expense</span><span className="text-white">{INR(viewingCollection.fuel_expense)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Fuel (Cash Fund)</span><span className="text-white">{INR(viewingCollection.fuel_expense_cash)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Fuel (Paid by Owner)</span><span className="text-white">{INR(viewingCollection.fuel_expense_owner)}</span></div>
                     <div className="flex justify-between"><span className="text-slate-400">Vehicle Rent</span><span className="text-white">{INR(viewingCollection.vehicle_rent)}</span></div>
                     <div className="flex justify-between"><span className="text-slate-400">Driver Wage</span><span className="text-white">{INR(viewingCollection.driver_wage)}</span></div>
                     <div className="flex justify-between"><span className="text-slate-400">Helper Wage</span><span className="text-white">{INR(viewingCollection.helper_wage)}</span></div>
@@ -899,14 +935,25 @@ export default function DailyCollectionsPage() {
                 </div>
               )}
 
-              {/* Net Balance Footer Card */}
-              <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl flex items-center justify-between">
+              {/* Totals Summary Footer Card */}
+              <div className="bg-slate-950 border border-slate-850 p-5 rounded-xl grid grid-cols-2 md:grid-cols-4 gap-4 text-center sm:text-left">
                 <div>
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Net Balance</span>
-                  <p className="text-slate-400 text-xs mt-0.5">Calculated: Total Collections - Total Expenses</p>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Collections</span>
+                  <p className="text-white text-base font-bold mt-0.5">{INR(viewingCollection.total_collection)}</p>
                 </div>
-                <div className={`text-lg font-black ${parseFloat(viewingCollection.balance) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {INR(viewingCollection.balance)}
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Expenses</span>
+                  <p className="text-white text-base font-bold mt-0.5">{INR(viewingCollection.total_expense)}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Net Balance (Cash Fund)</span>
+                  <p className={`text-base font-black mt-0.5 ${parseFloat(viewingCollection.balance) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {INR(viewingCollection.balance)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Owed to Owner</span>
+                  <p className="text-orange-400 text-base font-bold mt-0.5">{INR(viewingCollection.fuel_expense_owner)}</p>
                 </div>
               </div>
             </div>
@@ -968,7 +1015,8 @@ export default function DailyCollectionsPage() {
               <h3 className="font-bold text-xs uppercase border-b border-gray-300 pb-2 mb-3 text-red-650">Trip Expenses</h3>
               <table className="w-full text-xs">
                 <tbody>
-                  <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Fuel Expense</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.fuel_expense)}</td></tr>
+                  <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Fuel (Cash Fund)</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.fuel_expense_cash)}</td></tr>
+                  <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Fuel (Paid by Owner)</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.fuel_expense_owner)}</td></tr>
                   <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Vehicle Rent</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.vehicle_rent)}</td></tr>
                   <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Driver Wage</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.driver_wage)}</td></tr>
                   <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-600">Helper Wage</td><td className="py-1.5 text-right font-medium">{INR(viewingCollection.helper_wage)}</td></tr>
@@ -1019,14 +1067,23 @@ export default function DailyCollectionsPage() {
             </div>
           )}
 
-          {/* Net balance footer */}
-          <div className="border-2 border-gray-850 p-4 rounded flex items-center justify-between font-bold text-base">
+          {/* Totals Summary Footer Card (Print) */}
+          <div className="border-2 border-gray-350 p-4 rounded grid grid-cols-2 md:grid-cols-4 gap-4 font-bold text-xs text-left">
             <div>
-              <p className="uppercase text-xs text-gray-500">Net Trip Balance</p>
-              <p className="text-[10px] text-gray-400 font-normal mt-0.5">Calculated: Total Collections - Total Expenses</p>
+              <p className="uppercase text-[9px] text-gray-500">Total Collections</p>
+              <p className="text-gray-900 mt-0.5">{INR(viewingCollection.total_collection)}</p>
             </div>
-            <div className={parseFloat(viewingCollection.balance) >= 0 ? 'text-emerald-650' : 'text-red-650'}>
-              {INR(viewingCollection.balance)}
+            <div>
+              <p className="uppercase text-[9px] text-gray-500">Total Expenses</p>
+              <p className="text-gray-900 mt-0.5">{INR(viewingCollection.total_expense)}</p>
+            </div>
+            <div>
+              <p className="uppercase text-[9px] text-gray-500">Net Balance (Cash Fund)</p>
+              <p className={parseFloat(viewingCollection.balance) >= 0 ? 'text-emerald-650' : 'text-red-650'}>{INR(viewingCollection.balance)}</p>
+            </div>
+            <div>
+              <p className="uppercase text-[9px] text-gray-500">Owed to Owner</p>
+              <p className="text-orange-600 mt-0.5">{INR(viewingCollection.fuel_expense_owner)}</p>
             </div>
           </div>
 

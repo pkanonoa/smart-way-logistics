@@ -505,9 +505,19 @@ export default function WaybillDetailsPage() {
                 <div className="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
                   <span className="text-orange-400 text-sm font-bold">{c.name?.charAt(0)?.toUpperCase()}</span>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-white text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-slate-500 text-xs">{c.phone}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <span className="text-slate-500 text-xs">{c.phone}</span>
+                    {c.role && (
+                      <>
+                        <span className="text-slate-700 text-xs">•</span>
+                        <span className="text-orange-400/90 font-medium capitalize text-[10px] bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded">
+                          {c.role === 'other' ? c.role_other_specify || 'Other' : c.role.replace('_', ' ')}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

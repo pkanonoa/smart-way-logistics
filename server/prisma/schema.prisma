@@ -308,7 +308,8 @@ model DailyCollection {
   start_km         Int
   end_km           Int
   total_km         Int
-  fuel_expense     Decimal  @db.Decimal(10, 2)
+  fuel_expense_cash  Decimal  @db.Decimal(10, 2) @default(0.00)
+  fuel_expense_owner Decimal  @db.Decimal(10, 2) @default(0.00)
   vehicle_rent     Decimal  @db.Decimal(10, 2)
   driver_wage      Decimal  @db.Decimal(10, 2)
   helper_wage      Decimal  @db.Decimal(10, 2)

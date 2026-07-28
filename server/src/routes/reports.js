@@ -742,7 +742,7 @@ router.get('/vehicles/:id', async (req, res) => {
         date: formatDate(c.date),
         driver_name: c.driver?.name || 'N/A',
         total_collection: Number(c.total_collection),
-        fuel_expense: Number(c.fuel_expense),
+        fuel_expense: Number(c.fuel_expense_cash || 0) + Number(c.fuel_expense_owner || 0),
         driver_wage: Number(c.driver_wage),
         other_expenses: Number(c.other_expenses)
       }))
@@ -848,7 +848,7 @@ router.get('/expenses', async (req, res) => {
       orderBy: { date: 'desc' }
     });
 
-    const totalFuel = logs.reduce((sum, l) => sum + Number(l.fuel_expense || 0), 0);
+    const totalFuel = logs.reduce((sum, l) => sum + Number(l.fuel_expense_cash || 0) + Number(l.fuel_expense_owner || 0), 0);
     const totalRent = logs.reduce((sum, l) => sum + Number(l.vehicle_rent || 0), 0);
     const totalDriverWage = logs.reduce((sum, l) => sum + Number(l.driver_wage || 0), 0);
     const totalHelperWage = logs.reduce((sum, l) => sum + Number(l.helper_wage || 0), 0);
@@ -862,13 +862,13 @@ router.get('/expenses', async (req, res) => {
         date: formatDate(l.date),
         vehicle_number: l.vehicle?.vehicle_number || 'N/A',
         driver_name: l.driver?.name || 'N/A',
-        fuel: Number(l.fuel_expense || 0),
+        fuel: Number(l.fuel_expense_cash || 0) + Number(l.fuel_expense_owner || 0),
         rent: Number(l.vehicle_rent || 0),
         driver_wage: Number(l.driver_wage || 0),
         helper_wage: Number(l.helper_wage || 0),
         advance: Number(l.advance || 0),
         other: Number(l.other_expenses || 0),
-        total: Number(l.fuel_expense || 0) + Number(l.vehicle_rent || 0) + Number(l.driver_wage || 0) + Number(l.helper_wage || 0) + Number(l.advance || 0) + Number(l.other_expenses || 0)
+        total: Number(l.fuel_expense_cash || 0) + Number(l.fuel_expense_owner || 0) + Number(l.vehicle_rent || 0) + Number(l.driver_wage || 0) + Number(l.helper_wage || 0) + Number(l.advance || 0) + Number(l.other_expenses || 0)
       }))
     };
 

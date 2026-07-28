@@ -15,7 +15,8 @@ function calculateFields(data) {
   const end_km = parseInt(data.end_km || 0);
   const total_km = Math.max(0, end_km - start_km);
 
-  const fuel_expense = floatVal(data.fuel_expense);
+  const fuel_expense_cash = floatVal(data.fuel_expense_cash);
+  const fuel_expense_owner = floatVal(data.fuel_expense_owner);
   const vehicle_rent = floatVal(data.vehicle_rent);
   const driver_wage = floatVal(data.driver_wage);
   const helper_wage = floatVal(data.helper_wage);
@@ -26,15 +27,16 @@ function calculateFields(data) {
   const upi_collection = floatVal(data.upi_collection);
   const credit_collection = floatVal(data.credit_collection);
 
-  const total_expense = fuel_expense + vehicle_rent + driver_wage + helper_wage + advance + other_expenses;
+  const total_expense = fuel_expense_cash + fuel_expense_owner + vehicle_rent + driver_wage + helper_wage + advance + other_expenses;
   const total_collection = cash_collection + upi_collection + credit_collection;
-  const balance = total_collection - total_expense;
+  const balance = total_collection - (fuel_expense_cash + vehicle_rent + driver_wage + helper_wage + advance + other_expenses);
 
   return {
     start_km,
     end_km,
     total_km,
-    fuel_expense,
+    fuel_expense_cash,
+    fuel_expense_owner,
     vehicle_rent,
     driver_wage,
     helper_wage,

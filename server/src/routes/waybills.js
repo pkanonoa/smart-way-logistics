@@ -156,7 +156,7 @@ router.get('/', async (req, res) => {
         { booking_date: 'desc' },
         { created_at: 'desc' }
       ],
-      include: { assigned_staff: { select: { id: true, name: true, phone: true } }, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } }, creator: { select: { id: true, name: true } }, payment: true },
     });
     return res.status(200).json({ waybills: waybills.map(mapWaybillResponse) });
   } catch (err) {
@@ -394,7 +394,7 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
     const waybill = await prisma.waybill.findUnique({
       where: { id: req.params.id },
       include: {
-        assigned_staff: { select: { id: true, name: true, phone: true } },
+        assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } },
         creator: { select: { id: true, name: true } },
         payment: true,
       },
