@@ -190,6 +190,7 @@ export default function WaybillsPage() {
                   <tr className="border-b border-slate-800 text-slate-400 text-xs font-medium uppercase tracking-wider">
                     <th className="px-6 py-4 text-left">Waybill</th>
                     <th className="px-6 py-4 text-left">Date</th>
+                    <th className="px-6 py-4 text-left">Consignor</th>
                     <th className="px-6 py-4 text-left">Consignee</th>
                     <th className="px-6 py-4 text-left">Route</th>
                     <th className="px-6 py-4 text-right">Amount</th>
@@ -214,6 +215,10 @@ export default function WaybillsPage() {
                       </td>
                       <td className="px-6 py-4 text-slate-300">
                         {formatDate(wb.booking_date)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-white font-medium">{wb.consignor_name || '—'}</p>
+                        <p className="text-slate-500 text-xs">{wb.consignor_contact || '—'}</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-white font-medium">{wb.consignee_name}</p>
