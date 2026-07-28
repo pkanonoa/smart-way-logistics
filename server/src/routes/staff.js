@@ -173,11 +173,11 @@ router.delete(
     try {
       const staff = await prisma.staff.findUnique({
         where: { id: req.params.id },
-        include: { _count: { select: { waybills_as_consignor: true } } },
+        include: { _count: { select: { assigned_waybills: true } } },
       });
       if (!staff) return res.status(404).json({ error: 'Staff not found' });
-      if (staff._count.waybills_as_consignor > 0) {
-        return res.status(409).json({ error: 'Cannot delete staff because they are linked to existing waybills.' });
+      if (staff._count.assigned_waybills > 0) {
+        return res.status(409).json({ error: 'Cannot delete staff because they are assigned to existing waybills.' });
       }
 
       await prisma.staff.delete({ where: { id: req.params.id } });
