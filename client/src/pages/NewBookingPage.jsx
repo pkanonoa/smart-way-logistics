@@ -99,7 +99,6 @@ function SuccessScreen({ waybill, onNewBooking }) {
           <Row label="Consignee" value={waybill.consignee_name} />
           <Row label="Staff/Drivers" value={waybill.assigned_staff?.map(c => c.name).join(', ') || '—'} />
           <Row label="Packages"  value={`${waybill.no_of_packages} × ${waybill.package_type}`} />
-          <Row label="Weight"    value={`${waybill.weight} kg`} />
           <Row label="Payment"   value={waybill.payment_mode?.toUpperCase()} />
           
           <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
@@ -183,7 +182,6 @@ function SuccessScreen({ waybill, onNewBooking }) {
               <th className="border border-gray-300 p-2 text-left">Description</th>
               <th className="border border-gray-300 p-2">Pkgs</th>
               <th className="border border-gray-300 p-2">Type</th>
-              <th className="border border-gray-300 p-2">Wt (kg)</th>
             </tr>
           </thead>
           <tbody>
@@ -191,7 +189,6 @@ function SuccessScreen({ waybill, onNewBooking }) {
               <td className="border border-gray-300 p-2">{waybill.description || '—'}</td>
               <td className="border border-gray-300 p-2 text-center">{waybill.no_of_packages}</td>
               <td className="border border-gray-300 p-2 text-center">{waybill.package_type}</td>
-              <td className="border border-gray-300 p-2 text-center">{waybill.weight}</td>
             </tr>
           </tbody>
         </table>
@@ -282,7 +279,6 @@ export default function NewBookingPage() {
     }
     if (!form.consignee_address.trim())    e.consignee_address = 'Required';
     if (!form.package_type.trim())         e.package_type      = 'Required';
-    if (!form.weight || parseFloat(form.weight) <= 0) e.weight = 'Must be > 0';
     if (!form.no_of_packages || parseInt(form.no_of_packages) < 1) e.no_of_packages = 'Min 1';
     if (form.freight === '' || parseFloat(form.freight) < 0) e.freight = 'Required';
     return e;
@@ -306,7 +302,7 @@ export default function NewBookingPage() {
         ...form,
         assigned_staff_ids: consignors.filter(Boolean).map(c => c.id),
         no_of_packages: parseInt(form.no_of_packages),
-        weight:         parseFloat(form.weight),
+        weight:         0.0,
         volume:         form.volume ? parseFloat(form.volume) : undefined,
         freight:        parseFloat(form.freight),
         handling_charges: parseFloat(form.handling_charges || 0),
@@ -512,7 +508,7 @@ export default function NewBookingPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
         }>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="No. of Packages" required error={errors.no_of_packages}>
               <input type="number" min="1" name="no_of_packages" value={form.no_of_packages}
                 onChange={handleChange} className={inputCls(errors.no_of_packages)} />
@@ -520,10 +516,6 @@ export default function NewBookingPage() {
             <Field label="Package Type" required error={errors.package_type}>
               <input name="package_type" value={form.package_type} onChange={handleChange}
                 placeholder="Box / Bag / Carton" className={inputCls(errors.package_type)} />
-            </Field>
-            <Field label="Weight (kg)" required error={errors.weight}>
-              <input type="number" step="0.001" min="0" name="weight" value={form.weight}
-                onChange={handleChange} placeholder="0.000" className={inputCls(errors.weight)} />
             </Field>
             <Field label="Volume (cm³)">
               <input type="number" step="0.001" min="0" name="volume" value={form.volume}

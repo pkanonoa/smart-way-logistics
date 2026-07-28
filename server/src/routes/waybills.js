@@ -47,7 +47,7 @@ router.post('/', requireRole('admin', 'staff'), [
   body('consignee_address').trim().notEmpty(),
   body('no_of_packages').isInt({ min: 1 }),
   body('package_type').trim().notEmpty(),
-  body('weight').isFloat({ min: 0.001 }),
+  body('weight').optional().isFloat({ min: 0 }),
   body('freight').isFloat({ min: 0 }),
   body('payment_mode').isIn(['paid', 'topay', 'credit']),
 ], async (req, res) => {
@@ -103,7 +103,7 @@ router.post('/', requireRole('admin', 'staff'), [
           consignee_name: consignee_name.trim(), consignee_mobile: consignee_mobile.trim(),
           consignee_address: consignee_address.trim(), consignee_gst: consignee_gst?.trim() || null,
           no_of_packages: parseInt(no_of_packages), package_type: package_type.trim(),
-          weight: parseFloat(weight), volume: volume ? parseFloat(volume) : null,
+          weight: weight ? parseFloat(weight) : 0.0, volume: volume ? parseFloat(volume) : null,
           description: description?.trim() || null,
           freight: parseFloat(freight), handling_charges: parseFloat(handling_charges || 0),
           sgst: parseFloat(sgst || 0), cgst: parseFloat(cgst || 0), igst: parseFloat(igst || 0),
