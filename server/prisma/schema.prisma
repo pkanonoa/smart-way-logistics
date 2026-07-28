@@ -189,7 +189,7 @@ model StaffAdvance {
 model Vehicle {
   id                String    @id @default(uuid())
   vehicle_number    String    @unique
-  vehicle_name      String
+  vehicle_name      String?
   insurance_expiry  DateTime? @db.Date
   rc_expiry         DateTime? @db.Date
   pollution_expiry  DateTime? @db.Date

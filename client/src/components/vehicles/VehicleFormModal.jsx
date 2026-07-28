@@ -45,7 +45,6 @@ export default function VehicleFormModal({ isOpen, onClose, onSaved, vehicle = n
   function validate() {
     const errs = {};
     if (!form.vehicle_number.trim()) errs.vehicle_number = 'Vehicle number is required';
-    if (!form.vehicle_name.trim())   errs.vehicle_name = 'Vehicle name is required';
     return errs;
   }
 
@@ -58,7 +57,7 @@ export default function VehicleFormModal({ isOpen, onClose, onSaved, vehicle = n
     try {
       const payload = {
         vehicle_number: form.vehicle_number.trim(),
-        vehicle_name: form.vehicle_name.trim(),
+        vehicle_name: form.vehicle_name.trim() || null,
         insurance_expiry: form.insurance_expiry || null,
         rc_expiry: form.rc_expiry || null,
         pollution_expiry: form.pollution_expiry || null,
@@ -104,7 +103,7 @@ export default function VehicleFormModal({ isOpen, onClose, onSaved, vehicle = n
               {errors.vehicle_number && <p className="text-red-400 text-xs mt-1">{errors.vehicle_number}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Vehicle Name *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Vehicle Name</label>
               <input name="vehicle_name" value={form.vehicle_name} onChange={handleChange} placeholder="Tata Ace" className={inputCls(errors.vehicle_name)} />
               {errors.vehicle_name && <p className="text-red-400 text-xs mt-1">{errors.vehicle_name}</p>}
             </div>

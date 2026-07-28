@@ -16,7 +16,7 @@ function handleValidationErrors(req, res) {
 
 const VehicleValidators = [
   body('vehicle_number').trim().notEmpty().withMessage('Vehicle number is required'),
-  body('vehicle_name').trim().notEmpty().withMessage('Vehicle name is required'),
+  body('vehicle_name').optional({ checkFalsy: true }).trim(),
   body('insurance_expiry').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Invalid date'),
   body('rc_expiry').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Invalid date'),
   body('pollution_expiry').optional({ checkFalsy: true }).isISO8601().toDate().withMessage('Invalid date'),
@@ -90,7 +90,7 @@ router.post('/', requireRole('admin', 'staff'), VehicleValidators, async (req, r
     const conflict = await prisma.vehicle.findUnique({ where: { vehicle_number } });
     if (conflict) return res.status(409).json({ error: 'Vehicle number already exists' });
     const vehicle = await prisma.vehicle.create({
-      data: { vehicle_number, vehicle_name, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
+      data: { vehicle_number, vehicle_name: vehicle_name || null, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
     });
     res.status(201).json({ vehicle });
   } catch (err) {
@@ -110,7 +110,7 @@ router.put('/:id', requireRole('admin', 'staff'), VehicleValidators, async (req,
     if (conflict) return res.status(409).json({ error: 'Vehicle number already exists' });
     const vehicle = await prisma.vehicle.update({
       where: { id: req.params.id },
-      data: { vehicle_number, vehicle_name, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
+      data: { vehicle_number, vehicle_name: vehicle_name || null, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
     });
     res.json({ vehicle });
   } catch (err) {
