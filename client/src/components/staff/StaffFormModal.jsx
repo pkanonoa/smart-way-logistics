@@ -61,7 +61,6 @@ export default function StaffFormModal({ isOpen, onClose, onSaved, staff = null,
     } else if (!/^[6-9]\d{9}$/.test(form.phone.trim())) {
       errs.phone = 'Phone must be a valid 10-digit number';
     }
-    if (!form.address.trim()) errs.address = 'Address is required';
     if (form.role === 'other' && !form.role_other_specify.trim()) {
       errs.role_other_specify = 'Please specify the role';
     }
@@ -78,7 +77,7 @@ export default function StaffFormModal({ isOpen, onClose, onSaved, staff = null,
       const payload = {
         name:       form.name.trim(),
         phone:      form.phone.trim(),
-        address:    form.address.trim(),
+        address:    form.address ? form.address.trim() : "",
         role:       form.role,
         role_other_specify: form.role === 'other' ? form.role_other_specify.trim() : null,
       };
@@ -203,13 +202,7 @@ export default function StaffFormModal({ isOpen, onClose, onSaved, staff = null,
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Address *" error={errors.address}>
-              <textarea name="address" value={form.address} onChange={handleChange}
-                rows={2} placeholder="Street, area…"
-                className={`${inputCls(errors.address)} resize-none`} />
-            </Field>
-          </div>
+
 
           {/* Server error */}
           {serverError && (

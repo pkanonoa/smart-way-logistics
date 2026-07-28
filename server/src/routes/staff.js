@@ -25,7 +25,7 @@ const StaffValidators = [
     .trim()
     .notEmpty().withMessage('Phone is required')
     .matches(/^[6-9]\d{9}$/).withMessage('Phone must be a valid 10-digit number'),
-  body('address').trim().notEmpty().withMessage('Address is required'),
+  body('address').optional().trim(),
   body('role').isIn(['driver', 'staff', 'office_staff', 'other']).withMessage('Invalid role'),
   body('role_other_specify')
     .if((value, { req }) => req.body.role === 'other')
@@ -106,7 +106,7 @@ router.post(
         data: {
           name,
           phone,
-          address,
+          address: address || '',
           role: role || 'staff',
           role_other_specify: role === 'other' ? (role_other_specify || null) : null,
         },
@@ -146,7 +146,7 @@ router.put(
         data: {
           name,
           phone,
-          address,
+          address: address || '',
           role: role || 'staff',
           role_other_specify: role === 'other' ? (role_other_specify || null) : null,
         },
