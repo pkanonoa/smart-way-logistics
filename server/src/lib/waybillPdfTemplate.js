@@ -247,7 +247,10 @@ ${ewayRow}
 <!-- Assigned Staff / Drivers -->
 <div style="display: flex; align-items: center; gap: 12px; border: 1.5px solid #1a1a1a; padding: 6px 12px; margin-bottom: 8px;">
   <span class="payment-label" style="margin-right: 8px;">ASSIGNED STAFF/DRIVERS</span>
-  <span style="font-size: 11px; font-weight: 600;">${assignedStaff.map(s => `${s.name} (${s.phone})`).join(', ') || '—'}</span>
+  <span style="font-size: 11px; font-weight: 600;">${assignedStaff.map(s => {
+    const roleStr = s.role ? ` - ${s.role === 'other' ? s.role_other_specify || 'Other' : s.role.replace('_', ' ')}` : '';
+    return `${s.name} (${s.phone}${roleStr})`;
+  }).join(', ') || '—'}</span>
 </div>
 
 <!-- Declaration -->
