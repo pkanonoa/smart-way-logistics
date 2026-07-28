@@ -35,14 +35,14 @@ router.post('/', requireRole('admin', 'staff'), [
   body('from_location').trim().notEmpty(),
   body('to_location').trim().notEmpty(),
   body('consignor_name').trim().notEmpty().withMessage('Consignor name (Business Name) is required'),
-  body('consignor_contact').trim().notEmpty().withMessage('Consignor contact (Contact Person) is required'),
+  body('consignor_contact').optional({ checkFalsy: true }).trim(),
   body('consignor_address').trim().notEmpty().withMessage('Consignor address (Pickup Address) is required'),
   body('assigned_staff_ids').isArray({ min: 1 }).withMessage('At least one staff member is required'),
   body('assigned_staff_ids.*').notEmpty(),
   body('consignee_name').trim().notEmpty(),
   body('consignee_mobile')
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty().withMessage('Consignee mobile is required')
     .matches(/^[6-9]\d{9}$/).withMessage('Consignee mobile must be a valid 10-digit number'),
   body('consignee_address').trim().notEmpty(),
   body('no_of_packages').isInt({ min: 1 }),
@@ -94,13 +94,13 @@ router.post('/', requireRole('admin', 'staff'), [
           waybill_number, booking_date: bDate,
           from_location: from_location.trim(), to_location: to_location.trim(),
           consignor_name: consignor_name.trim(),
-          consignor_contact: consignor_contact.trim(),
+          consignor_contact: consignor_contact?.trim() || '',
           consignor_address: consignor_address.trim(),
           consignor_gst: consignor_gst?.trim() || null,
           assigned_staff: {
             connect: assigned_staff_ids.map(id => ({ id }))
           },
-          consignee_name: consignee_name.trim(), consignee_mobile: consignee_mobile.trim(),
+          consignee_name: consignee_name.trim(), consignee_mobile: consignee_mobile?.trim() || '',
           consignee_address: consignee_address.trim(), consignee_gst: consignee_gst?.trim() || null,
           no_of_packages: parseInt(no_of_packages), package_type: package_type.trim(),
           weight: weight ? parseFloat(weight) : 0.0, volume: volume ? parseFloat(volume) : null,

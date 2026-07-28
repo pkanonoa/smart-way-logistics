@@ -120,10 +120,8 @@ export default function EditBookingPage() {
     if (!form.from_location.trim())        e.from_location     = 'Required';
     if (!form.to_location.trim())          e.to_location       = 'Required';
     if (!form.consignor_name.trim())       e.consignor_name    = 'Required';
-    if (!form.consignor_contact.trim())    e.consignor_contact = 'Required';
     if (!form.consignor_address.trim())    e.consignor_address = 'Required';
     if (!form.consignee_name.trim())       e.consignee_name    = 'Required';
-    if (!form.consignee_mobile.trim())     e.consignee_mobile  = 'Required';
     if (!form.consignee_address.trim())    e.consignee_address = 'Required';
     if (!form.package_type.trim())         e.package_type      = 'Required';
     if (!form.no_of_packages || parseInt(form.no_of_packages) < 1) e.no_of_packages = 'Min 1';
@@ -245,7 +243,7 @@ export default function EditBookingPage() {
               <input name="consignor_name" value={form.consignor_name} onChange={handleChange}
                 placeholder="Sender company name" className={inputCls(errors.consignor_name)} />
             </Field>
-            <Field label="Contact Person" required error={errors.consignor_contact}>
+            <Field label="Contact Person" error={errors.consignor_contact}>
               <input name="consignor_contact" value={form.consignor_contact} onChange={handleChange}
                 placeholder="Sender contact name/mobile" className={inputCls(errors.consignor_contact)} />
             </Field>
@@ -334,7 +332,7 @@ export default function EditBookingPage() {
               <input name="consignee_name" value={form.consignee_name} onChange={handleChange}
                 placeholder="Receiver name" className={inputCls(errors.consignee_name)} />
             </Field>
-            <Field label="Mobile" required error={errors.consignee_mobile}>
+            <Field label="Mobile" error={errors.consignee_mobile}>
               <input name="consignee_mobile" value={form.consignee_mobile} onChange={handleChange}
                 placeholder="+91 98765 43210" className={inputCls(errors.consignee_mobile)} />
             </Field>
