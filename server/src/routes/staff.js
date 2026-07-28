@@ -70,7 +70,7 @@ router.get(
 
 router.get('/:id', async (req, res) => {
   try {
-    const staff = await prisma.Staff.findUnique({
+    const staff = await prisma.staff.findUnique({
       where: { id: req.params.id },
     });
 
@@ -97,12 +97,12 @@ router.post(
 
     try {
       // Check phone uniqueness against other records
-      const conflict = await prisma.Staff.findUnique({ where: { phone } });
+      const conflict = await prisma.staff.findUnique({ where: { phone } });
       if (conflict) {
         return res.status(409).json({ error: 'A Staff with this phone number already exists' });
       }
 
-      const staff = await prisma.Staff.create({
+      const staff = await prisma.staff.create({
         data: {
           name,
           phone,
@@ -134,14 +134,14 @@ router.put(
 
     try {
       // Check phone uniqueness against other records
-      const conflict = await prisma.Staff.findFirst({
+      const conflict = await prisma.staff.findFirst({
         where: { phone, NOT: { id: req.params.id } },
       });
       if (conflict) {
         return res.status(409).json({ error: 'Phone number already used by another Staff' });
       }
 
-      const staff = await prisma.Staff.update({
+      const staff = await prisma.staff.update({
         where: { id: req.params.id },
         data: {
           name,
