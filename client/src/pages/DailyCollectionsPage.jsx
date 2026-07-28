@@ -693,7 +693,7 @@ export default function DailyCollectionsPage() {
                       {errors.fuel_expense_cash && <p className="text-red-400 text-[10px] mt-1">{errors.fuel_expense_cash}</p>}
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Paid by Owner (₹)</label>
+                      <label className="block text-xs text-slate-400 mb-1">Paid by Owner ₹ (das)</label>
                       <input
                         type="number"
                         step="any"
