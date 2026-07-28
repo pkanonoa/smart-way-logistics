@@ -217,7 +217,7 @@ export default function StaffPage() {
 
                       {canEdit(user?.role) && (
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => openAttendance(c)}
                               className="text-slate-400 hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10 transition-all flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
