@@ -806,43 +806,68 @@ export default function DailyCollectionsPage() {
                 </div>
               </div>
 
-              {/* Summary Footer */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex gap-6 text-center sm:text-left flex-wrap justify-center sm:justify-start">
+              {/* Summary Card */}
+              <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-y-6 gap-x-4">
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Total Collections</span>
-                    <p className="text-white text-lg font-bold mt-0.5">{INR(totalCollection)}</p>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Total Collections</span>
+                    <p className="text-[#f59e0b] text-xl font-bold mt-1">{INR(totalCollection)}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Total Expenses</span>
-                    <p className="text-white text-lg font-bold mt-0.5">{INR(totalExpense)}</p>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Total Expenses</span>
+                    <p className="text-[#fed7aa] text-xl font-bold mt-1">{INR(totalExpense)}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Net Balance (Cash Fund)</span>
-                    <p className={`text-xl font-black mt-0.5 ${balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{INR(balance)}</p>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Net Balance (Cash Fund)</span>
+                    <p className={`text-xl font-black mt-1 ${balance >= 0 ? 'text-emerald-400' : 'text-[#f43f5e]'}`}>
+                      {balance < 0 ? '-' : ''}{INR(Math.abs(balance))}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Owed to Owner</span>
-                    <p className="text-orange-400 text-lg font-bold mt-0.5">{INR(owedToOwner)}</p>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Owed to Owner</span>
+                    <p className="text-[#0ea5e9] text-xl font-bold mt-1">{INR(owedToOwner)}</p>
                   </div>
                 </div>
 
-                <div className="flex gap-3 w-full sm:w-auto">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 sm:flex-initial px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="flex-1 sm:flex-initial bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors shadow-lg shadow-orange-500/20"
-                  >
-                    {submitting ? 'Saving...' : 'Save Collection Sheet'}
-                  </button>
+                <hr className="border-slate-800" />
+
+                <div className="space-y-4 text-xs font-medium text-slate-350">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <span>Cash fund spent on fuel: <strong className="text-white">{INR(fuelCash)}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Owner spent on fuel: <strong className="text-white">{INR(fuelOwner)}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 font-bold w-4 h-4 flex items-center justify-center text-xs">₹</span>
+                    <span>Total fuel expense: <strong className="text-white">{INR(fuelCash + fuelOwner)}</strong></span>
+                  </div>
                 </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-xl px-6 py-2.5 text-sm font-semibold transition-colors shadow-lg shadow-orange-500/20"
+                >
+                  {submitting ? 'Saving...' : 'Save Collection Sheet'}
+                </button>
+              </div>
               </div>
             </form>
           </div>
