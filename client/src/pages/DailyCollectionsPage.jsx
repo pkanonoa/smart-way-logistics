@@ -294,7 +294,9 @@ export default function DailyCollectionsPage() {
       setIsModalOpen(false);
       loadCollections();
     } catch (err) {
-      alert('Failed to save daily collection record.');
+      console.error('Save error details:', err);
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert(`Failed to save daily collection record: ${errMsg}`);
     } finally {
       setSubmitting(false);
     }
