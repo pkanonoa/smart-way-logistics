@@ -97,7 +97,6 @@ function SuccessScreen({ waybill, onNewBooking }) {
             <Row label="To" value={waybill.to_location} />
             <Row label="Consignor" value={waybill.consignor_name} />
             <Row label="Consignee" value={waybill.consignee_name} />
-            <Row label="Staff/Drivers" value={waybill.assigned_staff?.map(c => c.name).join(', ') || '—'} />
             <Row label="Packages" value={`${waybill.no_of_packages} × ${waybill.package_type}`} />
             <Row label="Payment" value={waybill.payment_mode?.toUpperCase()} />
 
@@ -153,9 +152,6 @@ function SuccessScreen({ waybill, onNewBooking }) {
             <div><strong>Payment:</strong> {waybill.payment_mode?.toUpperCase()}</div>
             <div><strong>From:</strong> {waybill.from_location}</div>
             <div><strong>To:</strong> {waybill.to_location}</div>
-            <div className="col-span-2">
-              <strong>Staff/Drivers:</strong> {waybill.assigned_staff?.map(c => c.name).join(', ') || '—'}
-            </div>
             <div className="col-span-2">
               <strong>E-Way Bill:</strong> {waybill.eway_bill_number ? waybill.eway_bill_number : waybill.eway_bill_required ? 'REQUIRED - NOT ADDED' : 'Not Required'}
             </div>
@@ -247,7 +243,6 @@ export default function NewBookingPage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(EMPTY);
-  const [consignors, setConsignors] = useState([null]);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -265,7 +260,6 @@ export default function NewBookingPage() {
 
   function validate() {
     const e = {};
-    if (consignors.filter(Boolean).length === 0) e.consignors = 'At least one Staff/Driver is required';
     if (!form.from_location.trim()) e.from_location = 'Required';
     if (!form.to_location.trim()) e.to_location = 'Required';
     if (!form.consignor_name.trim()) e.consignor_name = 'Required';
@@ -297,7 +291,7 @@ export default function NewBookingPage() {
     try {
       const waybill = await createWaybill({
         ...form,
-        assigned_staff_ids: consignors.filter(Boolean).map(c => c.id),
+        assigned_staff_ids: [],
         no_of_packages: parseInt(form.no_of_packages),
         weight: 0.0,
         volume: form.volume ? parseFloat(form.volume) : undefined,
@@ -406,66 +400,6 @@ export default function NewBookingPage() {
           </div>
         </Section>
 
-        {/* ── Section 2.5: Assigned Staff / Drivers ─────────────── */}
-        <Section title="Assigned Staff / Drivers" icon={
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        }>
-          <Field label="Delivery Team" required error={errors.consignors}>
-            <div className="space-y-4">
-              {consignors.map((consignor, index) => (
-                <div key={index} className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/40 relative">
-                  {consignors.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setConsignors(prev => prev.filter((_, i) => i !== index))}
-                      className="absolute top-4 right-4 text-slate-400 hover:text-red-400 transition-colors"
-                      title="Remove"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-
-                  <div className={consignors.length > 1 ? "pr-8" : ""}>
-                    <StaffSelect
-                      selectedstaff={consignor}
-                      onSelect={(c) => {
-                        const newArr = [...consignors];
-                        newArr[index] = c;
-                        setConsignors(newArr);
-                      }}
-                      onClear={() => {
-                        const newArr = [...consignors];
-                        newArr[index] = null;
-                        setConsignors(newArr);
-                      }}
-                    />
-                  </div>
-
-                  {consignor && (
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <InfoBox label="Phone" value={consignor.phone} />
-                      <InfoBox label="Role" value={consignor.role === 'other' ? consignor.role_other_specify : consignor.role} />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setConsignors(prev => [...prev, null])}
-                className="w-full py-2.5 border border-dashed border-slate-600 rounded-xl text-slate-400 text-sm hover:text-white hover:border-orange-500/50 hover:bg-orange-500/10 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add another Driver/Staff
-              </button>
-            </div>
-          </Field>
         </Section>
 
         {/* ── Section 3: Consignee ─────────────────────────────── */}

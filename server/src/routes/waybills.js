@@ -38,8 +38,7 @@ router.post('/', requireRole('admin', 'staff'), [
   body('consignor_name').trim().notEmpty().withMessage('Consignor name (Business Name) is required'),
   body('consignor_contact').optional({ checkFalsy: true }).trim(),
   body('consignor_address').trim().notEmpty().withMessage('Consignor address (Pickup Address) is required'),
-  body('assigned_staff_ids').isArray({ min: 1 }).withMessage('At least one staff member is required'),
-  body('assigned_staff_ids.*').notEmpty(),
+  body('assigned_staff_ids').optional().isArray(),
   body('consignee_name').trim().notEmpty(),
   body('consignee_mobile')
     .optional({ checkFalsy: true })
@@ -57,7 +56,7 @@ router.post('/', requireRole('admin', 'staff'), [
 
   const { booking_date, from_location, to_location,
     consignor_name, consignor_contact, consignor_address, consignor_gst,
-    assigned_staff_ids,
+    assigned_staff_ids = [],
     consignee_name, consignee_mobile, consignee_address, consignee_gst,
     no_of_packages, package_type, weight, volume, description,
     freight, handling_charges, sgst, cgst, igst, payment_mode,
@@ -68,8 +67,10 @@ router.post('/', requireRole('admin', 'staff'), [
   try {
     const waybill = await prisma.$transaction(async (tx) => {
       // Validate all staff exist
-      const staffs = await tx.staff.findMany({ where: { id: { in: assigned_staff_ids } } });
-      if (staffs.length !== assigned_staff_ids.length) throw Object.assign(new Error('One or more staff not found'), { code: 'NOT_FOUND' });
+      if (assigned_staff_ids && assigned_staff_ids.length > 0) {
+        const staffs = await tx.staff.findMany({ where: { id: { in: assigned_staff_ids } } });
+        if (staffs.length !== assigned_staff_ids.length) throw Object.assign(new Error('One or more staff not found'), { code: 'NOT_FOUND' });
+      }
       
       const bDate = booking_date ? new Date(booking_date) : new Date();
       
@@ -98,9 +99,11 @@ router.post('/', requireRole('admin', 'staff'), [
           consignor_contact: consignor_contact?.trim() || '',
           consignor_address: consignor_address.trim(),
           consignor_gst: consignor_gst?.trim() || null,
-          assigned_staff: {
-            connect: assigned_staff_ids.map(id => ({ id }))
-          },
+          ...(assigned_staff_ids && assigned_staff_ids.length > 0 && {
+            assigned_staff: {
+              connect: assigned_staff_ids.map(id => ({ id }))
+            }
+          }),
           consignee_name: consignee_name.trim(), consignee_mobile: consignee_mobile?.trim() || '',
           consignee_address: consignee_address.trim(), consignee_gst: consignee_gst?.trim() || null,
           no_of_packages: parseInt(no_of_packages), package_type: package_type.trim(),
