@@ -6,8 +6,8 @@ import StaffSelect from '../components/staff/StaffSelect';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const today = () => new Date().toISOString().slice(0, 10);
-const INR   = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
-const sum   = (...vals) => vals.reduce((a, v) => a + parseFloat(v || 0), 0);
+const INR = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
+const sum = (...vals) => vals.reduce((a, v) => a + parseFloat(v || 0), 0);
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
@@ -75,137 +75,137 @@ function SuccessScreen({ waybill, onNewBooking }) {
       `}</style>
       <div>
 
-      <div className="max-w-xl mx-auto px-6 py-16 text-center print:hidden">
-        <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-
-        <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
-        <p className="text-slate-400 mb-8">Your waybill has been created successfully.</p>
-
-        <div className="inline-flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-2xl px-8 py-5 mb-6">
-          <div>
-            <p className="text-slate-400 text-xs mb-1">Waybill Number</p>
-            <p className="text-orange-400 text-3xl font-bold tracking-widest">{waybill.waybill_number}</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-5 mb-8 text-left space-y-2">
-          <Row label="From"      value={waybill.from_location} />
-          <Row label="To"        value={waybill.to_location} />
-          <Row label="Consignor" value={waybill.consignor_name} />
-          <Row label="Consignee" value={waybill.consignee_name} />
-          <Row label="Staff/Drivers" value={waybill.assigned_staff?.map(c => c.name).join(', ') || '—'} />
-          <Row label="Packages"  value={`${waybill.no_of_packages} × ${waybill.package_type}`} />
-          <Row label="Payment"   value={waybill.payment_mode?.toUpperCase()} />
-          
-          <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
-            <span className="text-slate-400 text-sm">E-Way Bill</span>
-            {waybill.eway_bill_number ? (
-              <span className="text-white font-mono">{waybill.eway_bill_number}</span>
-            ) : waybill.eway_bill_required ? (
-              <span className="text-orange-400 text-xs font-bold px-2 py-0.5 bg-orange-500/10 rounded border border-orange-500/20">
-                REQUIRED - NOT ADDED
-              </span>
-            ) : (
-              <span className="text-slate-500 text-sm">Not required</span>
-            )}
-          </div>
-
-          <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
-            <span className="text-slate-400 text-sm">Grand Total</span>
-            <span className="text-white font-bold text-lg">{INR(waybill.grand_total)}</span>
-          </div>
-        </div>
-
-
-
-        <div className="flex gap-3 justify-center">
-          <button onClick={() => window.print()}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl px-6 py-3 text-sm font-medium transition-all border border-slate-700">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        <div className="max-w-xl mx-auto px-6 py-16 text-center print:hidden">
+          <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Print Receipt
-          </button>
-          <button id="new-booking-btn" onClick={onNewBooking}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white rounded-xl px-6 py-3 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Booking
-          </button>
-        </div>
-      </div>
+          </div>
 
-      {/* Print Receipt - Shown only when printing */}
-      <div id="print-receipt" className="hidden print:block bg-white text-black p-8 max-w-2xl mx-auto">
-        <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
-          <h1 className="text-2xl font-bold">SMART WAY LOGISTICS</h1>
-          <p className="text-xs text-gray-600">Waybill / Consignment Note</p>
-          <p className="text-xl font-bold mt-2">{waybill.waybill_number}</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
+          <p className="text-slate-400 mb-8">Your waybill has been created successfully.</p>
+
+          <div className="inline-flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-2xl px-8 py-5 mb-6">
+            <div>
+              <p className="text-slate-400 text-xs mb-1">Waybill Number</p>
+              <p className="text-orange-400 text-3xl font-bold tracking-widest">{waybill.waybill_number}</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-5 mb-8 text-left space-y-2">
+            <Row label="From" value={waybill.from_location} />
+            <Row label="To" value={waybill.to_location} />
+            <Row label="Consignor" value={waybill.consignor_name} />
+            <Row label="Consignee" value={waybill.consignee_name} />
+            <Row label="Staff/Drivers" value={waybill.assigned_staff?.map(c => c.name).join(', ') || '—'} />
+            <Row label="Packages" value={`${waybill.no_of_packages} × ${waybill.package_type}`} />
+            <Row label="Payment" value={waybill.payment_mode?.toUpperCase()} />
+
+            <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
+              <span className="text-slate-400 text-sm">E-Way Bill</span>
+              {waybill.eway_bill_number ? (
+                <span className="text-white font-mono">{waybill.eway_bill_number}</span>
+              ) : waybill.eway_bill_required ? (
+                <span className="text-orange-400 text-xs font-bold px-2 py-0.5 bg-orange-500/10 rounded border border-orange-500/20">
+                  REQUIRED - NOT ADDED
+                </span>
+              ) : (
+                <span className="text-slate-500 text-sm">Not required</span>
+              )}
+            </div>
+
+            <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between">
+              <span className="text-slate-400 text-sm">Grand Total</span>
+              <span className="text-white font-bold text-lg">{INR(waybill.grand_total)}</span>
+            </div>
+          </div>
+
+
+
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => window.print()}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl px-6 py-3 text-sm font-medium transition-all border border-slate-700">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print Receipt
+            </button>
+            <button id="new-booking-btn" onClick={onNewBooking}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white rounded-xl px-6 py-3 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Booking
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-          <div><strong>Date & Time:</strong> {new Date(waybill.booking_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div>
-          <div><strong>Payment:</strong> {waybill.payment_mode?.toUpperCase()}</div>
-          <div><strong>From:</strong> {waybill.from_location}</div>
-          <div><strong>To:</strong> {waybill.to_location}</div>
-          <div className="col-span-2">
-            <strong>Staff/Drivers:</strong> {waybill.assigned_staff?.map(c => c.name).join(', ') || '—'}
+
+        {/* Print Receipt - Shown only when printing */}
+        <div id="print-receipt" className="hidden print:block bg-white text-black p-8 max-w-2xl mx-auto">
+          <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
+            <h1 className="text-2xl font-bold">SMART WAY LOGISTICS</h1>
+            <p className="text-xs text-gray-600">Waybill / Consignment Note</p>
+            <p className="text-xl font-bold mt-2">{waybill.waybill_number}</p>
           </div>
-          <div className="col-span-2">
-            <strong>E-Way Bill:</strong> {waybill.eway_bill_number ? waybill.eway_bill_number : waybill.eway_bill_required ? 'REQUIRED - NOT ADDED' : 'Not Required'}
+          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+            <div><strong>Date & Time:</strong> {new Date(waybill.booking_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+            <div><strong>Payment:</strong> {waybill.payment_mode?.toUpperCase()}</div>
+            <div><strong>From:</strong> {waybill.from_location}</div>
+            <div><strong>To:</strong> {waybill.to_location}</div>
+            <div className="col-span-2">
+              <strong>Staff/Drivers:</strong> {waybill.assigned_staff?.map(c => c.name).join(', ') || '—'}
+            </div>
+            <div className="col-span-2">
+              <strong>E-Way Bill:</strong> {waybill.eway_bill_number ? waybill.eway_bill_number : waybill.eway_bill_required ? 'REQUIRED - NOT ADDED' : 'Not Required'}
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 border border-gray-300 rounded p-4 mb-4 text-sm">
-          <div>
-            <p className="font-bold text-xs uppercase mb-1">Consignor (Sender)</p>
-            <p className="font-semibold">{waybill.consignor_name}</p>
-            <p>{waybill.consignor_contact}</p>
-            {waybill.consignor_gst && <p>GST: {waybill.consignor_gst}</p>}
-            <p className="text-xs text-gray-600 mt-1">{waybill.consignor_address}</p>
+          <div className="grid grid-cols-2 gap-3 border border-gray-300 rounded p-4 mb-4 text-sm">
+            <div>
+              <p className="font-bold text-xs uppercase mb-1">Consignor (Sender)</p>
+              <p className="font-semibold">{waybill.consignor_name}</p>
+              <p>{waybill.consignor_contact}</p>
+              {waybill.consignor_gst && <p>GST: {waybill.consignor_gst}</p>}
+              <p className="text-xs text-gray-600 mt-1">{waybill.consignor_address}</p>
+            </div>
+            <div>
+              <p className="font-bold text-xs uppercase mb-1">Consignee (Receiver)</p>
+              <p className="font-semibold">{waybill.consignee_name}</p>
+              <p>{waybill.consignee_mobile}</p>
+              {waybill.consignee_gst && <p>GST: {waybill.consignee_gst}</p>}
+              <p className="text-xs text-gray-600 mt-1">{waybill.consignee_address}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-xs uppercase mb-1">Consignee (Receiver)</p>
-            <p className="font-semibold">{waybill.consignee_name}</p>
-            <p>{waybill.consignee_mobile}</p>
-            {waybill.consignee_gst && <p>GST: {waybill.consignee_gst}</p>}
-            <p className="text-xs text-gray-600 mt-1">{waybill.consignee_address}</p>
+          <table className="w-full border-collapse text-sm mb-4">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 p-2 text-left">Description</th>
+                <th className="border border-gray-300 p-2">Pkgs</th>
+                <th className="border border-gray-300 p-2">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-gray-300 p-2">{waybill.description || '—'}</td>
+                <td className="border border-gray-300 p-2 text-center">{waybill.no_of_packages}</td>
+                <td className="border border-gray-300 p-2 text-center">{waybill.package_type}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="text-right text-sm space-y-1">
+            <p>Freight: ₹{Number(waybill.freight).toFixed(2)}</p>
+            {Number(waybill.handling_charges) > 0 && <p>Handling: ₹{Number(waybill.handling_charges).toFixed(2)}</p>}
+            {Number(waybill.sgst) > 0 && <p>SGST: ₹{Number(waybill.sgst).toFixed(2)}</p>}
+            {Number(waybill.cgst) > 0 && <p>CGST: ₹{Number(waybill.cgst).toFixed(2)}</p>}
+            {Number(waybill.igst) > 0 && <p>IGST: ₹{Number(waybill.igst).toFixed(2)}</p>}
+            <p className="text-base font-bold border-t-2 border-gray-800 pt-2 mt-2">
+              Grand Total: ₹{Number(waybill.grand_total).toFixed(2)}
+            </p>
           </div>
-        </div>
-        <table className="w-full border-collapse text-sm mb-4">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 p-2 text-left">Description</th>
-              <th className="border border-gray-300 p-2">Pkgs</th>
-              <th className="border border-gray-300 p-2">Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-gray-300 p-2">{waybill.description || '—'}</td>
-              <td className="border border-gray-300 p-2 text-center">{waybill.no_of_packages}</td>
-              <td className="border border-gray-300 p-2 text-center">{waybill.package_type}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="text-right text-sm space-y-1">
-          <p>Freight: ₹{Number(waybill.freight).toFixed(2)}</p>
-          {Number(waybill.handling_charges) > 0 && <p>Handling: ₹{Number(waybill.handling_charges).toFixed(2)}</p>}
-          {Number(waybill.sgst) > 0 && <p>SGST: ₹{Number(waybill.sgst).toFixed(2)}</p>}
-          {Number(waybill.cgst) > 0 && <p>CGST: ₹{Number(waybill.cgst).toFixed(2)}</p>}
-          {Number(waybill.igst) > 0 && <p>IGST: ₹{Number(waybill.igst).toFixed(2)}</p>}
-          <p className="text-base font-bold border-t-2 border-gray-800 pt-2 mt-2">
-            Grand Total: ₹{Number(waybill.grand_total).toFixed(2)}
+          <p className="text-xs text-gray-400 text-center mt-8 border-t border-gray-200 pt-4">
+            Computer-generated receipt — Smart Way Logistics
           </p>
         </div>
-        <p className="text-xs text-gray-400 text-center mt-8 border-t border-gray-200 pt-4">
-          Computer-generated receipt — Smart Way Logistics
-        </p>
-      </div>
 
       </div>
     </>
@@ -215,29 +215,29 @@ function SuccessScreen({ waybill, onNewBooking }) {
 // ─── Form initial state ───────────────────────────────────────────────────────
 
 const EMPTY = {
-  booking_date:      today(),
-  from_location:     '',
-  to_location:       '',
-  consignor_name:    '',
+  booking_date: today(),
+  from_location: '',
+  to_location: '',
+  consignor_name: '',
   consignor_contact: '',
   consignor_address: '',
-  consignor_gst:     '',
-  consignee_name:    '',
-  consignee_mobile:  '',
+  consignor_gst: '',
+  consignee_name: '',
+  consignee_mobile: '',
   consignee_address: '',
-  consignee_gst:     '',
-  no_of_packages:    '1',
-  package_type:      '',
-  weight:            '',
-  volume:            '',
-  description:       '',
-  freight:           '',
-  handling_charges:  '0',
-  sgst:              '0',
-  cgst:              '0',
-  igst:              '0',
-  payment_mode:      'paid',
-  eway_bill_number:  '',
+  consignee_gst: '',
+  no_of_packages: '1',
+  package_type: '',
+  weight: '',
+  volume: '',
+  description: '',
+  freight: '',
+  handling_charges: '0',
+  sgst: '0',
+  cgst: '0',
+  igst: '0',
+  payment_mode: 'paid',
+  eway_bill_number: '',
   eway_bill_valid_until: '',
 };
 
@@ -246,11 +246,11 @@ const EMPTY = {
 export default function NewBookingPage() {
   const navigate = useNavigate();
 
-  const [form, setForm]                     = useState(EMPTY);
-  const [consignors, setConsignors]           = useState([null]);
-  const [errors, setErrors]                 = useState({});
-  const [serverError, setServerError]       = useState('');
-  const [loading, setLoading]               = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [consignors, setConsignors] = useState([null]);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [createdWaybill, setCreatedWaybill] = useState(null);
 
   const grandTotal = sum(form.freight, form.handling_charges, form.sgst, form.cgst, form.igst);
@@ -266,16 +266,16 @@ export default function NewBookingPage() {
   function validate() {
     const e = {};
     if (consignors.filter(Boolean).length === 0) e.consignors = 'At least one Staff/Driver is required';
-    if (!form.from_location.trim())        e.from_location     = 'Required';
-    if (!form.to_location.trim())          e.to_location       = 'Required';
-    if (!form.consignor_name.trim())       e.consignor_name    = 'Required';
-    if (!form.consignor_address.trim())    e.consignor_address = 'Required';
-    if (!form.consignee_name.trim())       e.consignee_name    = 'Required';
+    if (!form.from_location.trim()) e.from_location = 'Required';
+    if (!form.to_location.trim()) e.to_location = 'Required';
+    if (!form.consignor_name.trim()) e.consignor_name = 'Required';
+    if (!form.consignor_address.trim()) e.consignor_address = 'Required';
+    if (!form.consignee_name.trim()) e.consignee_name = 'Required';
     if (form.consignee_mobile.trim() && !/^[6-9]\d{9}$/.test(form.consignee_mobile.trim())) {
       e.consignee_mobile = 'Must be a valid 10-digit number';
     }
-    if (!form.consignee_address.trim())    e.consignee_address = 'Required';
-    if (!form.package_type.trim())         e.package_type      = 'Required';
+    if (!form.consignee_address.trim()) e.consignee_address = 'Required';
+    if (!form.package_type.trim()) e.package_type = 'Required';
     if (!form.no_of_packages || parseInt(form.no_of_packages) < 1) e.no_of_packages = 'Min 1';
     if (form.freight === '' || parseFloat(form.freight) < 0) e.freight = 'Required';
     return e;
@@ -299,13 +299,13 @@ export default function NewBookingPage() {
         ...form,
         assigned_staff_ids: consignors.filter(Boolean).map(c => c.id),
         no_of_packages: parseInt(form.no_of_packages),
-        weight:         0.0,
-        volume:         form.volume ? parseFloat(form.volume) : undefined,
-        freight:        parseFloat(form.freight),
+        weight: 0.0,
+        volume: form.volume ? parseFloat(form.volume) : undefined,
+        freight: parseFloat(form.freight),
         handling_charges: parseFloat(form.handling_charges || 0),
-        sgst:           parseFloat(form.sgst || 0),
-        cgst:           parseFloat(form.cgst || 0),
-        igst:           parseFloat(form.igst || 0),
+        sgst: parseFloat(form.sgst || 0),
+        cgst: parseFloat(form.cgst || 0),
+        igst: parseFloat(form.igst || 0),
         eway_bill_number: form.eway_bill_number?.trim() || undefined,
         eway_bill_valid_until: form.eway_bill_valid_until || undefined,
       });
@@ -428,7 +428,7 @@ export default function NewBookingPage() {
                       </svg>
                     </button>
                   )}
-                  
+
                   <div className={consignors.length > 1 ? "pr-8" : ""}>
                     <StaffSelect
                       selectedstaff={consignor}
@@ -444,16 +444,16 @@ export default function NewBookingPage() {
                       }}
                     />
                   </div>
-                  
+
                   {consignor && (
                     <div className="mt-4 grid grid-cols-2 gap-3">
-                      <InfoBox label="Phone"  value={consignor.phone} />
-                      <InfoBox label="Role"    value={consignor.role === 'other' ? consignor.role_other_specify : consignor.role} />
+                      <InfoBox label="Phone" value={consignor.phone} />
+                      <InfoBox label="Role" value={consignor.role === 'other' ? consignor.role_other_specify : consignor.role} />
                     </div>
                   )}
                 </div>
               ))}
-              
+
               <button
                 type="button"
                 onClick={() => setConsignors(prev => [...prev, null])}
@@ -586,7 +586,7 @@ export default function NewBookingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="E-Way Bill Number" required={grandTotal >= 50000}>
               <input name="eway_bill_number" value={form.eway_bill_number} onChange={handleChange}
-                placeholder={grandTotal >= 50000 ? "Required by GST rules" : "Optional"} 
+                placeholder={grandTotal >= 50000 ? "Required by GST rules" : "Optional"}
                 className={inputCls(grandTotal >= 50000 && !form.eway_bill_number.trim() ? "border-orange-500" : "")} />
             </Field>
             <Field label="Valid Until">
@@ -607,16 +607,15 @@ export default function NewBookingPage() {
         }>
           <div className="flex gap-3 flex-wrap">
             {[
-              { value: 'paid',   label: 'Paid',   desc: 'Freight collected from staff' },
-              { value: 'topay',  label: 'To Pay', desc: 'Collected on delivery' },
+              { value: 'paid', label: 'Paid', desc: 'Freight collected from staff' },
+              { value: 'topay', label: 'To Pay', desc: 'Collected on delivery' },
               { value: 'credit', label: 'Credit', desc: 'Monthly account billing' },
             ].map(({ value, label, desc }) => (
               <label key={value}
-                className={`flex-1 min-w-[140px] flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                  form.payment_mode === value
+                className={`flex-1 min-w-[140px] flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${form.payment_mode === value
                     ? 'bg-orange-500/10 border-orange-500/40'
                     : 'bg-slate-800/40 border-slate-700/40 hover:border-slate-600'
-                }`}>
+                  }`}>
                 <input type="radio" name="payment_mode" value={value}
                   checked={form.payment_mode === value} onChange={handleChange}
                   className="mt-0.5 accent-orange-500" />
@@ -645,8 +644,8 @@ export default function NewBookingPage() {
             {loading ? (
               <>
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
                 Creating Waybill…
               </>

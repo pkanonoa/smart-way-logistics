@@ -5,8 +5,8 @@ import StaffSelect from '../components/staff/StaffSelect';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const INR   = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
-const sum   = (...vals) => vals.reduce((a, v) => a + parseFloat(v || 0), 0);
+const INR = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
+const sum = (...vals) => vals.reduce((a, v) => a + parseFloat(v || 0), 0);
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
@@ -55,13 +55,13 @@ export default function EditBookingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [form, setForm]                     = useState(null);
-  const [consignors, setConsignors]         = useState([null]);
-  const [errors, setErrors]                 = useState({});
-  const [serverError, setServerError]       = useState('');
-  const [loading, setLoading]               = useState(false);
-  const [fetching, setFetching]             = useState(true);
-  const [waybillNumber, setWaybillNumber]   = useState('');
+  const [form, setForm] = useState(null);
+  const [consignors, setConsignors] = useState([null]);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [waybillNumber, setWaybillNumber] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -69,29 +69,29 @@ export default function EditBookingPage() {
         const w = await getWaybill(id);
         setWaybillNumber(w.waybill_number);
         setForm({
-          booking_date:          w.booking_date ? w.booking_date.slice(0, 10) : '',
-          from_location:         w.from_location,
-          to_location:           w.to_location,
-          consignor_name:        w.consignor_name || '',
-          consignor_contact:     w.consignor_contact || '',
-          consignor_address:     w.consignor_address || '',
-          consignor_gst:         w.consignor_gst || '',
-          consignee_name:        w.consignee_name,
-          consignee_mobile:      w.consignee_mobile,
-          consignee_address:     w.consignee_address,
-          consignee_gst:         w.consignee_gst || '',
-          no_of_packages:        String(w.no_of_packages),
-          package_type:          w.package_type,
-          weight:                String(w.weight),
-          volume:                w.volume ? String(w.volume) : '',
-          description:           w.description || '',
-          freight:               String(w.freight),
-          handling_charges:      String(w.handling_charges),
-          sgst:                  String(w.sgst),
-          cgst:                  String(w.cgst),
-          igst:                  String(w.igst),
-          payment_mode:          w.payment_mode,
-          eway_bill_number:      w.eway_bill_number || '',
+          booking_date: w.booking_date ? w.booking_date.slice(0, 10) : '',
+          from_location: w.from_location,
+          to_location: w.to_location,
+          consignor_name: w.consignor_name || '',
+          consignor_contact: w.consignor_contact || '',
+          consignor_address: w.consignor_address || '',
+          consignor_gst: w.consignor_gst || '',
+          consignee_name: w.consignee_name,
+          consignee_mobile: w.consignee_mobile,
+          consignee_address: w.consignee_address,
+          consignee_gst: w.consignee_gst || '',
+          no_of_packages: String(w.no_of_packages),
+          package_type: w.package_type,
+          weight: String(w.weight),
+          volume: w.volume ? String(w.volume) : '',
+          description: w.description || '',
+          freight: String(w.freight),
+          handling_charges: String(w.handling_charges),
+          sgst: String(w.sgst),
+          cgst: String(w.cgst),
+          igst: String(w.igst),
+          payment_mode: w.payment_mode,
+          eway_bill_number: w.eway_bill_number || '',
           eway_bill_valid_until: w.eway_bill_valid_until ? w.eway_bill_valid_until.slice(0, 10) : '',
         });
         setConsignors(w.assigned_staff?.length ? w.assigned_staff : [null]);
@@ -117,13 +117,13 @@ export default function EditBookingPage() {
   function validate() {
     const e = {};
     if (consignors.filter(Boolean).length === 0) e.consignors = 'At least one Staff/Driver is required';
-    if (!form.from_location.trim())        e.from_location     = 'Required';
-    if (!form.to_location.trim())          e.to_location       = 'Required';
-    if (!form.consignor_name.trim())       e.consignor_name    = 'Required';
-    if (!form.consignor_address.trim())    e.consignor_address = 'Required';
-    if (!form.consignee_name.trim())       e.consignee_name    = 'Required';
-    if (!form.consignee_address.trim())    e.consignee_address = 'Required';
-    if (!form.package_type.trim())         e.package_type      = 'Required';
+    if (!form.from_location.trim()) e.from_location = 'Required';
+    if (!form.to_location.trim()) e.to_location = 'Required';
+    if (!form.consignor_name.trim()) e.consignor_name = 'Required';
+    if (!form.consignor_address.trim()) e.consignor_address = 'Required';
+    if (!form.consignee_name.trim()) e.consignee_name = 'Required';
+    if (!form.consignee_address.trim()) e.consignee_address = 'Required';
+    if (!form.package_type.trim()) e.package_type = 'Required';
     if (!form.no_of_packages || parseInt(form.no_of_packages) < 1) e.no_of_packages = 'Min 1';
     if (form.freight === '' || parseFloat(form.freight) < 0) e.freight = 'Required';
     return e;
@@ -144,15 +144,15 @@ export default function EditBookingPage() {
       await updateWaybill(id, {
         ...form,
         assigned_staff_ids: consignors.filter(Boolean).map(c => c.id),
-        no_of_packages:   parseInt(form.no_of_packages),
-        weight:           0.0,
-        volume:           form.volume ? parseFloat(form.volume) : null,
-        freight:          parseFloat(form.freight),
+        no_of_packages: parseInt(form.no_of_packages),
+        weight: 0.0,
+        volume: form.volume ? parseFloat(form.volume) : null,
+        freight: parseFloat(form.freight),
         handling_charges: parseFloat(form.handling_charges || 0),
-        sgst:             parseFloat(form.sgst || 0),
-        cgst:             parseFloat(form.cgst || 0),
-        igst:             parseFloat(form.igst || 0),
-        eway_bill_number:      form.eway_bill_number?.trim() || null,
+        sgst: parseFloat(form.sgst || 0),
+        cgst: parseFloat(form.cgst || 0),
+        igst: parseFloat(form.igst || 0),
+        eway_bill_number: form.eway_bill_number?.trim() || null,
         eway_bill_valid_until: form.eway_bill_valid_until || null,
       });
       navigate(`/waybills/${id}`);
@@ -169,8 +169,8 @@ export default function EditBookingPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <svg className="w-8 h-8 animate-spin text-orange-500" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
       </div>
     );
@@ -459,16 +459,15 @@ export default function EditBookingPage() {
         }>
           <div className="flex gap-3 flex-wrap">
             {[
-              { value: 'paid',   label: 'Paid',   desc: 'Freight collected from staff' },
-              { value: 'topay',  label: 'To Pay', desc: 'Collected on delivery' },
+              { value: 'paid', label: 'Paid', desc: 'Freight collected from staff' },
+              { value: 'topay', label: 'To Pay', desc: 'Collected on delivery' },
               { value: 'credit', label: 'Credit', desc: 'Monthly account billing' },
             ].map(({ value, label, desc }) => (
               <label key={value}
-                className={`flex-1 min-w-[140px] flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                  form.payment_mode === value
+                className={`flex-1 min-w-[140px] flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${form.payment_mode === value
                     ? 'bg-orange-500/10 border-orange-500/40'
                     : 'bg-slate-800/40 border-slate-700/40 hover:border-slate-600'
-                }`}>
+                  }`}>
                 <input type="radio" name="payment_mode" value={value}
                   checked={form.payment_mode === value} onChange={handleChange}
                   className="mt-0.5 accent-orange-500" />
@@ -501,8 +500,8 @@ export default function EditBookingPage() {
             {loading ? (
               <>
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
                 Saving Changes…
               </>
