@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getVehicles, deleteVehicle } from '../api/vehiclesApi';
 import { useAuth } from '../context/AuthContext';
 import VehicleFormModal from '../components/vehicles/VehicleFormModal';
+import ActivityHistory from '../components/common/ActivityHistory';
 
 const canEdit = (role) => role === 'admin' || role === 'staff';
 
@@ -20,6 +21,7 @@ export default function VehiclesPage() {
   const [deleteError, setDeleteError] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('list');
 
   const loadVehicles = useCallback(async (search = '') => {
     setLoading(true);
@@ -86,16 +88,37 @@ export default function VehiclesPage() {
           )}
         </div>
 
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search vehicles…" className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all" />
-          </div>
+        <div className="flex gap-4 border-b border-slate-800 mb-6">
+          <button
+            onClick={() => setActiveTab('list')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'list' ? 'border-orange-500 text-orange-400' : 'border-transparent text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Vehicle Fleet
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'history' ? 'border-orange-500 text-orange-400' : 'border-transparent text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Entry History
+          </button>
         </div>
+
+        {activeTab === 'list' ? (
+          <>
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search vehicles…" className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 transition-all" />
+              </div>
+            </div>
 
         {error && (
           <div className="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
@@ -181,6 +204,13 @@ export default function VehiclesPage() {
             </div>
           )}
         </div>
+        </>
+        ) : (
+          <div className="bg-slate-900/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6">
+            <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider">Vehicle Entry History</h3>
+            <ActivityHistory module="vehicle" />
+          </div>
+        )}
       </div>
 
       <VehicleFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSaved={handleSaved} vehicle={editTarget} />

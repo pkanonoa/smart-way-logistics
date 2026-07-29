@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getWaybill, updateWaybill, deleteWaybill, downloadWaybillPdf, updateWaybillStatus, getWaybillTracking } from '../api/waybillApi';
 import { useAuth } from '../context/AuthContext';
+import ActivityHistory from '../components/common/ActivityHistory';
 
 function Badge({ status }) {
   const styles = {
@@ -676,6 +677,17 @@ export default function WaybillDetailsPage() {
             <p className="text-slate-500 text-sm font-medium">Status updates restricted to Staff & Admins.</p>
           </div>
         )}
+      </div>
+
+      {/* Modification History */}
+      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 mt-6">
+        <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Entry History (Activity Log)
+        </h3>
+        <ActivityHistory module="waybill" recordId={id} />
       </div>
 
       {/* E-Way Bill Modal */}

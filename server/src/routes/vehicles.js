@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { requireRole } = require('../middleware/auth');
+const { logActivity } = require('../lib/logger');
 
 const router = express.Router();
 
@@ -92,6 +93,7 @@ router.post('/', requireRole('admin', 'staff'), VehicleValidators, async (req, r
     const vehicle = await prisma.vehicle.create({
       data: { vehicle_number, vehicle_name: vehicle_name || null, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
     });
+    await logActivity(req, 'vehicle', 'CREATE', vehicle.id, `Created vehicle ${vehicle.vehicle_number}${vehicle.vehicle_name ? ' (' + vehicle.vehicle_name + ')' : ''}`);
     res.status(201).json({ vehicle });
   } catch (err) {
     console.error('[Vehicles:create]', err);
@@ -112,6 +114,7 @@ router.put('/:id', requireRole('admin', 'staff'), VehicleValidators, async (req,
       where: { id: req.params.id },
       data: { vehicle_number, vehicle_name: vehicle_name || null, insurance_expiry, rc_expiry, pollution_expiry, last_service_date }
     });
+    await logActivity(req, 'vehicle', 'UPDATE', vehicle.id, `Updated vehicle ${vehicle.vehicle_number}${vehicle.vehicle_name ? ' (' + vehicle.vehicle_name + ')' : ''}`);
     res.json({ vehicle });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Vehicle not found' });
@@ -123,7 +126,10 @@ router.put('/:id', requireRole('admin', 'staff'), VehicleValidators, async (req,
 // DELETE /api/vehicles/:id
 router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
   try {
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: req.params.id } });
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
     await prisma.vehicle.delete({ where: { id: req.params.id } });
+    await logActivity(req, 'vehicle', 'DELETE', req.params.id, `Deleted vehicle ${vehicle.vehicle_number}${vehicle.vehicle_name ? ' (' + vehicle.vehicle_name + ')' : ''}`);
     res.json({ message: 'Vehicle deleted' });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Vehicle not found' });

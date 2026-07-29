@@ -9,6 +9,7 @@ import EditBaseAmountModal from '../components/salaries/EditBaseAmountModal';
 import CreateSingleWeekModal from '../components/salaries/CreateSingleWeekModal';
 import SettlePaymentModal from '../components/payments/SettlePaymentModal';
 import { useAuth } from '../context/AuthContext';
+import ActivityHistory from '../components/common/ActivityHistory';
 
 export default function StaffDetailsPage() {
   const { user } = useAuth();
@@ -177,6 +178,14 @@ export default function StaffDetailsPage() {
               }`}
             >
               Waybill Payments
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'history' ? 'border-orange-500 text-orange-400' : 'border-transparent text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Entry History
             </button>
           </div>
         </div>
@@ -561,6 +570,13 @@ export default function StaffDetailsPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Staff Entry History</h3>
+            <ActivityHistory module="staff" recordId={id} />
           </div>
         )}
       </div>

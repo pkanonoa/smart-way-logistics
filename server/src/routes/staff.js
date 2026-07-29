@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { logActivity } = require('../lib/logger');
 
 const router = express.Router();
 
@@ -110,6 +111,7 @@ router.post(
         },
       });
 
+      await logActivity(req, 'staff', 'CREATE', staff.id, `Created staff ${staff.name} (${staff.role === 'other' ? (staff.role_other_specify || 'other') : staff.role})`);
       return res.status(201).json({ message: 'Staff created', staff });
     } catch (err) {
       console.error('[Staffs:create]', err);
@@ -149,6 +151,7 @@ router.put(
         },
       });
 
+      await logActivity(req, 'staff', 'UPDATE', staff.id, `Updated staff ${staff.name} (${staff.role === 'other' ? (staff.role_other_specify || 'other') : staff.role})`);
       return res.status(200).json({ message: 'Staff updated', staff });
     } catch (err) {
       if (err.code === 'P2025') {
@@ -178,6 +181,7 @@ router.delete(
       }
 
       await prisma.staff.delete({ where: { id: req.params.id } });
+      await logActivity(req, 'staff', 'DELETE', req.params.id, `Deleted staff ${staff.name} (${staff.role === 'other' ? (staff.role_other_specify || 'other') : staff.role})`);
       return res.status(200).json({ message: 'Staff deleted' });
     } catch (err) {
       if (err.code === 'P2025') {

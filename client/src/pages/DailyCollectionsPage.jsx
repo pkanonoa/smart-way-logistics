@@ -10,6 +10,7 @@ import StaffSelect from '../components/staff/StaffSelect';
 import VehicleSelect from '../components/vehicles/VehicleSelect';
 import { getWaybills } from '../api/waybillApi';
 import { useAuth } from '../context/AuthContext';
+import ActivityHistory from '../components/common/ActivityHistory';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const INR = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
@@ -35,6 +36,7 @@ const INITIAL_FORM = {
 
 export default function DailyCollectionsPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('list');
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -342,8 +344,29 @@ export default function DailyCollectionsPage() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 mb-6 backdrop-blur-sm">
+      <div className="flex gap-4 border-b border-slate-800 mb-6">
+        <button
+          onClick={() => setActiveTab('list')}
+          className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'list' ? 'border-orange-500 text-orange-400' : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          Collection Sheets
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'history' ? 'border-orange-500 text-orange-400' : 'border-transparent text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          Entry History
+        </button>
+      </div>
+
+      {activeTab === 'list' ? (
+        <>
+          {/* Filters */}
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 mb-6 backdrop-blur-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Start Date</label>
@@ -503,8 +526,15 @@ export default function DailyCollectionsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
-      </div>
+        </>
+      ) : (
+        <div className="bg-slate-900/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6">
+          <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider">Collections Entry History</h3>
+          <ActivityHistory module="daily_collection" />
+        </div>
+      )}
 
       {/* Record/Edit Collection Sheet Modal */}
       {isModalOpen && (
@@ -869,7 +899,6 @@ export default function DailyCollectionsPage() {
                 >
                   {submitting ? 'Saving...' : 'Save Collection Sheet'}
                 </button>
-              </div>
               </div>
             </form>
           </div>

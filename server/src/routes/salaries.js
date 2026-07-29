@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { logActivity } = require('../lib/logger');
 
 const router = express.Router();
 
@@ -240,8 +241,10 @@ router.put(
     try {
       const week = await prisma.salaryWeek.update({
         where: { id: req.params.id },
-        data: { base_amount: req.body.base_amount }
+        data: { base_amount: req.body.base_amount },
+        include: { staff: true }
       });
+      await logActivity(req, 'salary', 'UPDATE', week.id, `Updated base salary amount for ${week.staff.name} to ₹${req.body.base_amount}`);
       res.json({ week });
     } catch (err) {
       console.error(err);
@@ -256,13 +259,14 @@ router.delete('/weeks/:id', requireRole('admin', 'accountant'), async (req, res)
   try {
     const week = await prisma.salaryWeek.findUnique({
       where: { id: req.params.id },
-      include: { payments: true }
+      include: { payments: true, staff: true }
     });
     if (!week) return res.status(404).json({ error: 'Salary week not found' });
     if (week.payments.length > 0) {
       return res.status(400).json({ error: 'Cannot delete week because payments have been made.' });
     }
     await prisma.salaryWeek.delete({ where: { id: req.params.id } });
+    await logActivity(req, 'salary', 'DELETE', req.params.id, `Deleted salary week starting ${new Date(week.week_start_date).toLocaleDateString('en-IN')} for ${week.staff.name}`);
     res.json({ message: 'Salary week deleted' });
   } catch (err) {
     console.error(err);
@@ -298,7 +302,8 @@ router.post(
             reason: req.body.reason,
             added_by: req.user.id,
             advance_id: req.body.advance_id || null
-          }
+          },
+          include: { salary_week: { include: { staff: true } } }
         });
 
         if (req.body.advance_id && req.body.type === 'advance_recovery') {
@@ -311,6 +316,7 @@ router.post(
         return adjustment;
       });
 
+      await logActivity(req, 'salary', 'CREATE', adj.id, `Added ${adj.type} adjustment of ₹${adj.amount} for ${adj.salary_week.staff.name}: ${adj.reason}`);
       res.json({ adjustment: adj });
     } catch (err) {
       console.error(err);
@@ -341,8 +347,10 @@ router.put(
         data: {
           amount: req.body.amount,
           reason: req.body.reason !== undefined ? req.body.reason : adj.reason
-        }
+        },
+        include: { salary_week: { include: { staff: true } } }
       });
+      await logActivity(req, 'salary', 'UPDATE', updated.id, `Updated adjustment for ${updated.salary_week.staff.name} to ₹${updated.amount}: ${updated.reason}`);
       res.json({ adjustment: updated });
     } catch (err) {
       console.error(err);
@@ -355,7 +363,10 @@ router.put(
 
 router.delete('/adjustments/:id', requireRole('admin', 'accountant'), async (req, res) => {
   try {
-    const adj = await prisma.salaryAdjustment.findUnique({ where: { id: req.params.id } });
+    const adj = await prisma.salaryAdjustment.findUnique({
+      where: { id: req.params.id },
+      include: { salary_week: { include: { staff: true } } }
+    });
     if (!adj) return res.status(404).json({ error: 'Adjustment not found' });
 
     // Using a transaction to delete adjustment and un-recover advance
@@ -369,6 +380,7 @@ router.delete('/adjustments/:id', requireRole('admin', 'accountant'), async (req
       }
     });
 
+    await logActivity(req, 'salary', 'DELETE', req.params.id, `Deleted ${adj.type} adjustment of ₹${adj.amount} for ${adj.salary_week.staff.name}`);
     res.json({ message: 'Adjustment deleted' });
   } catch (err) {
     console.error(err);
@@ -380,7 +392,13 @@ router.delete('/adjustments/:id', requireRole('admin', 'accountant'), async (req
 
 router.delete('/payments/:id', requireRole('admin', 'accountant'), async (req, res) => {
   try {
+    const pay = await prisma.salaryPayment.findUnique({
+      where: { id: req.params.id },
+      include: { salary_week: { include: { staff: true } } }
+    });
+    if (!pay) return res.status(404).json({ error: 'Payment not found' });
     await prisma.salaryPayment.delete({ where: { id: req.params.id } });
+    await logActivity(req, 'salary', 'DELETE', req.params.id, `Deleted salary payment of ₹${pay.amount} for ${pay.salary_week.staff.name}`);
     res.json({ message: 'Payment deleted' });
   } catch (err) {
     console.error(err);
@@ -425,8 +443,10 @@ router.post(
           payment_date: req.body.payment_date,
           notes: req.body.notes || null,
           paid_by: req.user.id
-        }
+        },
+        include: { salary_week: { include: { staff: true } } }
       });
+      await logActivity(req, 'salary', 'CREATE', pay.id, `Recorded salary payment of ₹${pay.amount} for ${pay.salary_week.staff.name}`);
       res.json({ payment: pay });
     } catch (err) {
       console.error(err);
@@ -468,8 +488,10 @@ router.post(
           date: req.body.date,
           reason: req.body.reason,
           added_by: req.user.id
-        }
+        },
+        include: { staff: true }
       });
+      await logActivity(req, 'salary', 'CREATE', advance.id, `Recorded advance of ₹${advance.amount} for ${advance.staff.name}: ${advance.reason}`);
       res.json({ advance });
     } catch (err) {
       console.error(err);
@@ -480,7 +502,10 @@ router.post(
 
 router.delete('/advances/:id', requireRole('admin', 'accountant'), async (req, res) => {
   try {
-    const advance = await prisma.staffAdvance.findUnique({ where: { id: req.params.id } });
+    const advance = await prisma.staffAdvance.findUnique({
+      where: { id: req.params.id },
+      include: { staff: true }
+    });
     if (!advance) return res.status(404).json({ error: 'Advance not found' });
     
     if (advance.is_recovered) {
@@ -488,6 +513,7 @@ router.delete('/advances/:id', requireRole('admin', 'accountant'), async (req, r
     }
 
     await prisma.staffAdvance.delete({ where: { id: req.params.id } });
+    await logActivity(req, 'salary', 'DELETE', req.params.id, `Deleted advance of ₹${advance.amount} for ${advance.staff.name}`);
     res.json({ message: 'Advance deleted' });
   } catch (err) {
     console.error(err);

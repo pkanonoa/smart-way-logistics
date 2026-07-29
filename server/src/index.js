@@ -64,6 +64,7 @@ app.use('/api/reports',    reportsRoutes);
 app.use('/api/payments',   paymentsRoutes);
 app.use('/api',            paymentsRoutes);
 app.use('/api/users',      requireRole('admin'), usersRoutes);
+app.use('/api/activity-logs', require('./routes/activityLogs'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));

@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { logActivity } = require('../lib/logger');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -137,6 +138,8 @@ router.post('/', requireRole('admin', 'staff'), [
       }
     });
 
+    await logActivity(req, 'daily_collection', 'CREATE', record.id, `Created daily collection log for route ${record.route} on ${new Date(record.date).toLocaleDateString('en-IN')}`);
+
     return res.status(201).json({ message: 'Daily collection recorded successfully', collection: record });
   } catch (err) {
     console.error('[dailyCollections:create]', err);
@@ -179,6 +182,8 @@ router.put('/:id', requireRole('admin', 'staff'), [
       }
     });
 
+    await logActivity(req, 'daily_collection', 'UPDATE', record.id, `Updated daily collection log for route ${record.route} on ${new Date(record.date).toLocaleDateString('en-IN')}`);
+
     return res.status(200).json({ message: 'Daily collection updated successfully', collection: record });
   } catch (err) {
     console.error('[dailyCollections:update]', err);
@@ -190,9 +195,12 @@ router.put('/:id', requireRole('admin', 'staff'), [
 // ─── DELETE /api/daily-collections/:id ─────────────────────────────────────────
 router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
   try {
+    const existing = await prisma.dailyCollection.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Record not found' });
     await prisma.dailyCollection.delete({
       where: { id: req.params.id }
     });
+    await logActivity(req, 'daily_collection', 'DELETE', req.params.id, `Deleted daily collection log for route ${existing.route} on ${new Date(existing.date).toLocaleDateString('en-IN')}`);
     return res.status(200).json({ message: 'Daily collection deleted successfully' });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Record not found' });

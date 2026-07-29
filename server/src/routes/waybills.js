@@ -3,6 +3,7 @@ const { body, query, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { generateWaybillHtml } = require('../lib/waybillPdfTemplate');
+const { logActivity } = require('../lib/logger');
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -117,6 +118,7 @@ router.post('/', requireRole('admin', 'staff'), [
         include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
       });
     });
+    await logActivity(req, 'waybill', 'CREATE', waybill.id, `Created waybill ${waybill.waybill_number} from ${waybill.from_location} to ${waybill.to_location}`);
     return res.status(201).json({ message: 'Waybill created', waybill: mapWaybillResponse(waybill) });
   } catch (err) {
     if (err.code === 'NOT_FOUND') return res.status(404).json({ error: err.message });
@@ -245,6 +247,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
       },
       include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
     });
+    await logActivity(req, 'waybill', 'UPDATE', waybill.id, `Updated waybill ${waybill.waybill_number} details`);
     return res.status(200).json({ message: 'Waybill updated', waybill: mapWaybillResponse(waybill) });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Waybill not found' });
@@ -331,6 +334,8 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       return { waybill, tracking };
     });
 
+    await logActivity(req, 'waybill', 'UPDATE', result.waybill.id, `Updated status of waybill ${result.waybill.waybill_number} to ${selectedStatus.toUpperCase()}`);
+
     return res.status(200).json({
       message: 'Status updated',
       waybill: mapWaybillResponse(result.waybill),
@@ -378,6 +383,8 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
       // Then delete the waybill (many-to-many join table rows for consignors are handled automatically)
       await tx.waybill.delete({ where: { id: req.params.id } });
     });
+
+    await logActivity(req, 'waybill', 'DELETE', req.params.id, `Deleted waybill ${existing.waybill_number}`);
 
     return res.status(200).json({ message: 'Waybill deleted successfully' });
   } catch (err) {

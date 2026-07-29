@@ -330,4 +330,18 @@ model DailyCollection {
   @@map("daily_collections")
 }
 
+model ActivityLog {
+  id          String   @id @default(uuid())
+  module      String
+  action      String
+  record_id   String
+  description String
+  user_id     String?
+  user_name   String?
+  timestamp   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+
 
