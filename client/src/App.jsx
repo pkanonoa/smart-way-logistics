@@ -18,6 +18,7 @@ import DailyCollectionsPage from './pages/DailyCollectionsPage';
 import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
+import AssignTripsPage from './pages/AssignTripsPage';
 import { useAuth } from './context/AuthContext';
 
 function ShellRoute({ children }) {
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/bookings/edit/:id" element={<WriteShellRoute><EditBookingPage /></WriteShellRoute>} />
           <Route path="/daily-logs"   element={<ShellRoute><DailyLogsPage /></ShellRoute>} />
           <Route path="/daily-collections" element={<ShellRoute><DailyCollectionsPage /></ShellRoute>} />
+          <Route path="/assign-trips" element={<WriteShellRoute><AssignTripsPage /></WriteShellRoute>} />
           <Route path="/reports"      element={<ShellRoute><ReportsPage /></ShellRoute>} />
 
           {/* Waybills */}

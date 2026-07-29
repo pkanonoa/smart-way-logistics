@@ -17,6 +17,7 @@ const paymentsRoutes   = require('./routes/payments');
 const dashboardRoutes  = require('./routes/dashboard');
 const reportsRoutes    = require('./routes/reports');
 const usersRoutes      = require('./routes/users');
+const tripsRoutes      = require('./routes/trips');
 
 const { authenticateToken, requireRole } = require('./middleware/auth');
 
@@ -64,6 +65,7 @@ app.use('/api/reports',    reportsRoutes);
 app.use('/api/payments',   paymentsRoutes);
 app.use('/api',            paymentsRoutes);
 app.use('/api/users',      requireRole('admin'), usersRoutes);
+app.use('/api/trips',      tripsRoutes);
 app.use('/api/activity-logs', require('./routes/activityLogs'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
