@@ -334,7 +334,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       return { waybill, tracking };
     });
 
-    await logActivity(req, 'waybill', 'UPDATE', result.waybill.id, `Updated status of waybill ${result.waybill.waybill_number} to ${selectedStatus.toUpperCase()}`);
+    await logActivity(req, 'waybill', 'UPDATE', result.waybill.id, `Updated status of waybill ${result.waybill.waybill_number} to ${status.toUpperCase()}`);
 
     return res.status(200).json({
       message: 'Status updated',
