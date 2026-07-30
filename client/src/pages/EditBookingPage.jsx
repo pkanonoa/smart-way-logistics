@@ -93,7 +93,6 @@ export default function EditBookingPage() {
           eway_bill_number: w.eway_bill_number || '',
           eway_bill_valid_until: w.eway_bill_valid_until ? w.eway_bill_valid_until.slice(0, 10) : '',
         });
-        });
       } catch {
         setServerError('Failed to load waybill');
       } finally {

@@ -400,8 +400,6 @@ export default function NewBookingPage() {
           </div>
         </Section>
 
-        </Section>
-
         {/* ── Section 3: Consignee ─────────────────────────────── */}
         <Section title="Consignee (Receiver)" icon={
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
