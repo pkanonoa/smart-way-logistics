@@ -317,7 +317,7 @@ export default function NewBookingPage() {
     return (
       <SuccessScreen
         waybill={createdWaybill}
-        onNewBooking={() => { setCreatedWaybill(null); setForm(EMPTY); setConsignors([null]); }}
+        onNewBooking={() => { setCreatedWaybill(null); setForm(EMPTY); }}
       />
     );
   }
