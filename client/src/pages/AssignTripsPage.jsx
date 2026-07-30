@@ -276,7 +276,7 @@ export default function AssignTripsPage() {
                               onChange={(e) => handleFormChange(groupKey, 'staff_id', e.target.value)}
                               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                             >
-                              <option value="">Select Staff...</option>
+                              <option value="">Select Staff + Driver...</option>
                               {staff.map(s => (
                                 <option key={s.id} value={s.id}>{s.name} ({s.role?.replace('_', ' ')})</option>
                               ))}
