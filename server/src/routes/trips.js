@@ -57,7 +57,7 @@ router.get('/unassigned-groups', requireRole('admin', 'staff'), async (req, res)
 
 // POST /api/trips/assign
 router.post('/assign', requireRole('admin', 'staff'), async (req, res) => {
-  const { waybill_ids, staff_id, vehicle_id, date, route, start_km, end_km } = req.body;
+  const { waybill_ids, staff_id, helper_id, vehicle_id, date, route, start_km, end_km } = req.body;
 
   if (!waybill_ids || !Array.isArray(waybill_ids) || waybill_ids.length === 0) {
     return res.status(400).json({ error: 'Waybill IDs are required' });
@@ -88,6 +88,7 @@ router.post('/assign', requireRole('admin', 'staff'), async (req, res) => {
         data: {
           date: new Date(date),
           staff_id,
+          helper_id: helper_id || null,
           vehicle_id,
           route: route.trim(),
           start_km: startKmVal,
@@ -113,6 +114,7 @@ router.post('/assign', requireRole('admin', 'staff'), async (req, res) => {
         include: {
           waybills: true,
           staff: { select: { name: true } },
+          helper: { select: { name: true } },
           vehicle: { select: { vehicle_number: true } }
         }
       });

@@ -98,7 +98,8 @@ model Staff {
   attendances           Attendance[]
   salary_weeks          SalaryWeek[]
   advances              StaffAdvance[]
-  collections           DailyCollection[]
+  driver_trips          DailyCollection[] @relation("TripDriver")
+  helper_trips          DailyCollection[] @relation("TripHelper")
 
   @@map("staff")
 }
@@ -301,7 +302,9 @@ model DailyCollection {
   id               String   @id @default(uuid())
   date             DateTime @db.Date
   staff_id         String
-  staff            Staff    @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+  staff            Staff    @relation("TripDriver", fields: [staff_id], references: [id], onDelete: Cascade)
+  helper_id        String?
+  helper           Staff?   @relation("TripHelper", fields: [helper_id], references: [id], onDelete: SetNull)
   vehicle_id       String
   vehicle          Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
   route            String

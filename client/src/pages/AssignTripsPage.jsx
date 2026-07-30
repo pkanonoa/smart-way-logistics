@@ -42,6 +42,7 @@ export default function AssignTripsPage() {
         initialAssignments[key] = {
           selectedWaybills: g.waybills.map(wb => wb.id), // Checked by default
           staff_id: '',
+          helper_id: '',
           vehicle_id: '',
           date: today(),
           route: `${g.from_location} -> ${g.to_location}`,
@@ -121,6 +122,7 @@ export default function AssignTripsPage() {
       await assignTrip({
         waybill_ids: state.selectedWaybills,
         staff_id: state.staff_id,
+        helper_id: state.helper_id || null,
         vehicle_id: state.vehicle_id,
         date: state.date,
         route: state.route,
@@ -270,14 +272,28 @@ export default function AssignTripsPage() {
                           </div>
 
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1.5 uppercase font-semibold">Driver/Staff *</label>
+                            <label className="block text-xs text-slate-400 mb-1.5 uppercase font-semibold">Driver *</label>
                             <select
                               value={state.staff_id || ''}
                               onChange={(e) => handleFormChange(groupKey, 'staff_id', e.target.value)}
                               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                             >
-                              <option value="">Select Staff + Driver...</option>
+                              <option value="">Select Driver...</option>
                               {staff.map(s => (
+                                <option key={s.id} value={s.id}>{s.name} ({s.role?.replace('_', ' ')})</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-slate-400 mb-1.5 uppercase font-semibold">Helper (Optional)</label>
+                            <select
+                              value={state.helper_id || ''}
+                              onChange={(e) => handleFormChange(groupKey, 'helper_id', e.target.value)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                            >
+                              <option value="">Select Helper...</option>
+                              {staff.filter(s => s.id !== state.staff_id).map(s => (
                                 <option key={s.id} value={s.id}>{s.name} ({s.role?.replace('_', ' ')})</option>
                               ))}
                             </select>
