@@ -17,10 +17,25 @@ const EWAY_BILL_THRESHOLD = 50000;
 
 function mapWaybillResponse(waybill) {
   if (!waybill) return waybill;
-  return {
+
+  // Merge daily_collection staff/helper into assigned_staff so the UI shows them
+  let combined_staff = waybill.assigned_staff ? [...waybill.assigned_staff] : [];
+  if (waybill.daily_collection) {
+    if (waybill.daily_collection.staff && !combined_staff.find(s => s.id === waybill.daily_collection.staff.id)) {
+      combined_staff.push(waybill.daily_collection.staff);
+    }
+    if (waybill.daily_collection.helper && !combined_staff.find(s => s.id === waybill.daily_collection.helper.id)) {
+      combined_staff.push(waybill.daily_collection.helper);
+    }
+  }
+
+  const result = {
     ...waybill,
+    assigned_staff: combined_staff,
     eway_bill_required: parseFloat(waybill.grand_total) >= EWAY_BILL_THRESHOLD
   };
+  delete result.daily_collection; // optional cleanup
+  return result;
 }
 
 async function nextWaybillNumber(tx) {
@@ -118,7 +133,7 @@ router.post('/', requireRole('admin', 'staff'), [
             create: paymentData
           }
         },
-        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
+        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
       });
     });
     await logActivity(req, 'waybill', 'CREATE', waybill.id, `Created waybill ${waybill.waybill_number} from ${waybill.from_location} to ${waybill.to_location}`);
@@ -161,7 +176,7 @@ router.get('/', async (req, res) => {
         { booking_date: 'desc' },
         { created_at: 'desc' }
       ],
-      include: { assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } }, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } }, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
     });
     return res.status(200).json({ waybills: waybills.map(mapWaybillResponse) });
   } catch (err) {
@@ -175,7 +190,7 @@ router.get('/:id', async (req, res) => {
   try {
     const waybill = await prisma.waybill.findUnique({
       where: { id: req.params.id },
-      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
     return res.status(200).json({ waybill: mapWaybillResponse(waybill) });
@@ -248,7 +263,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
           }
         })
       },
-      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true },
+      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
     });
     await logActivity(req, 'waybill', 'UPDATE', waybill.id, `Updated waybill ${waybill.waybill_number} details`);
     return res.status(200).json({ message: 'Waybill updated', waybill: mapWaybillResponse(waybill) });
@@ -295,7 +310,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       const waybill = await tx.waybill.update({
         where: { id: existing.id },
         data: { status },
-        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true }
+        include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } }
       });
 
       // 3. Update payment details
@@ -407,6 +422,7 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
         assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } },
         creator: { select: { id: true, name: true } },
         payment: true,
+        daily_collection: { include: { staff: true, helper: true } },
       },
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
