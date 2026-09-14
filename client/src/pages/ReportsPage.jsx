@@ -1,158 +1,64 @@
-import { useState, useEffect } from 'react';
-import { getstaffs } from '../api/staffApi';
-import { getVehicles } from '../api/vehiclesApi';
-import {
-  getBookingsReport,
-  getSendersReport,
-  getPendingPaymentsReport,
-  getParcelsReport,
-  getStaffReport,
-  getVehiclesReport,
-  getExpensesReport,
-  getIncomeReport,
-  downloadReportBlob
-} from '../api/reportsApi';
+import React, { useState, useEffect } from 'react';
+import { getReportsSummary, downloadReportBlob } from '../api/reportsApi';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { getCompanies } from '../api/companiesApi';
+import { useNavigate } from 'react-router-dom';
 
-const INR = (amount) => Number(amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 });
-
-const REPORT_TABS = [
-  { id: 'bookings', name: 'Bookings' },
-  { id: 'senders', name: 'Senders' },
-  { id: 'pending-payments', name: 'Pending Payments' },
-  { id: 'parcels', name: 'Parcels Status' },
-  { id: 'staff', name: 'Staff Performance' },
-  { id: 'vehicles', name: 'Vehicles Performance' },
-  { id: 'expenses', name: 'Expenses' },
-  { id: 'income', name: 'Realized Income' }
-];
+const INR = (amount) => Number(amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState('bookings');
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
-  const [reportData, setReportData] = useState(null);
+  const [exportDate, setExportDate] = useState(new Date().toISOString().substring(0, 10));
+  const [exportRange, setExportRange] = useState('monthly');
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const [reportType, setReportType] = useState('overview');
+  const [companySearch, setCompanySearch] = useState('');
+  const [companies, setCompanies] = useState([]);
+  const navigate = useNavigate();
 
-  // Filters
-  const [range, setRange] = useState('monthly'); // daily | monthly
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
-  const [selectedStaffId, setSelectedStaffId] = useState('');
-  const [selectedVehicleId, setSelectedVehicleId] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-
-  // Dropdown lists
-  const [staffList, setStaffList] = useState([]);
-  const [vehicleList, setVehicleList] = useState([]);
-
-  // Fetch dropdown data
   useEffect(() => {
-    async function fetchDropdowns() {
+    async function loadData() {
       try {
-        const staff = await getstaffs();
-        setStaffList(staff || []);
-        if (staff.length > 0) setSelectedStaffId(staff[0].id);
-
-        const vehicles = await getVehicles();
-        setVehicleList(vehicles || []);
-        if (vehicles.length > 0) setSelectedVehicleId(vehicles[0].id);
-      } catch (err) {
-        console.error('Failed to load filter choices:', err);
-      }
-    }
-    fetchDropdowns();
-  }, []);
-
-  // Fetch report data when active tab or filters change
-  useEffect(() => {
-    async function loadReport() {
-      setLoading(true);
-      setReportData(null);
-      try {
-        let data = null;
-        const params = { range, date: selectedDate };
-
-        switch (activeTab) {
-          case 'bookings':
-            data = await getBookingsReport(params);
-            break;
-          case 'senders':
-            if (selectedStaffId) data = await getSendersReport(selectedStaffId);
-            break;
-          case 'pending-payments':
-            data = await getPendingPaymentsReport();
-            break;
-          case 'parcels':
-            data = await getParcelsReport(selectedStatus);
-            break;
-          case 'staff':
-            if (selectedStaffId) data = await getStaffReport(selectedStaffId);
-            break;
-          case 'vehicles':
-            if (selectedVehicleId) data = await getVehiclesReport(selectedVehicleId);
-            break;
-          case 'expenses':
-            data = await getExpensesReport(params);
-            break;
-          case 'income':
-            data = await getIncomeReport(params);
-            break;
-          default:
-            break;
+        const result = await getReportsSummary();
+        if (result && result.stats) {
+          setData(result);
+        } else {
+          throw new Error('Invalid data format received');
         }
-        setReportData(data);
       } catch (err) {
-        console.error('Failed to load report:', err);
+        console.error('Failed to load reports summary:', err);
+        setError(err.message || 'Failed to load report data');
       } finally {
         setLoading(false);
       }
     }
+    loadData();
+  }, []);
 
-    loadReport();
-  }, [activeTab, range, selectedDate, selectedStaffId, selectedVehicleId, selectedStatus]);
+  useEffect(() => {
+    if (reportType === 'company_statement' && companySearch.length > 1) {
+      const timer = setTimeout(() => {
+        getCompanies({ search: companySearch }).then(setCompanies).catch(console.error);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setCompanies([]);
+    }
+  }, [reportType, companySearch]);
 
-  // Export handlers
   const handleExport = async (format) => {
     setExporting(true);
     try {
-      let endpoint = '';
-      const params = { range, date: selectedDate };
-
-      switch (activeTab) {
-        case 'bookings':
-          endpoint = '/reports/bookings';
-          break;
-        case 'senders':
-          endpoint = `/reports/senders/${selectedStaffId}`;
-          break;
-        case 'pending-payments':
-          endpoint = '/reports/pending-payments';
-          break;
-        case 'parcels':
-          endpoint = '/reports/parcels';
-          params.status = selectedStatus;
-          break;
-        case 'staff':
-          endpoint = `/reports/staff/${selectedStaffId}`;
-          break;
-        case 'vehicles':
-          endpoint = `/reports/vehicles/${selectedVehicleId}`;
-          break;
-        case 'expenses':
-          endpoint = '/reports/expenses';
-          break;
-        case 'income':
-          endpoint = '/reports/income';
-          break;
-        default:
-          break;
-      }
-
-      if (!endpoint) return;
-
-      const blob = await downloadReportBlob(endpoint, params, format);
+      const blob = await downloadReportBlob('/reports/bookings', { range: exportRange, date: exportDate }, format);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${activeTab}-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+      link.setAttribute('download', `${exportRange}-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -164,543 +70,348 @@ export default function ReportsPage() {
     }
   };
 
+  const handlePrintPdf = async (waybillNumber) => {
+    const win = window.open('about:blank', '_blank');
+    try {
+      const blob = await downloadReportBlob(`/waybills/${waybillNumber}/pdf`, {}, 'pdf');
+      const url = window.URL.createObjectURL(blob);
+      if (win) {
+        win.location.href = url;
+      }
+    } catch (err) {
+      if (win) win.close();
+      console.error('PDF print failed', err);
+      alert('Failed to generate PDF');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-transparent">
+        <div className="w-10 h-10 border-4 border-slate-800 border-t-cyan-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-transparent text-white">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error || 'No data available'}</p>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-slate-800 rounded-lg">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredWaybills = data?.recentWaybills?.filter(w => 
+    w.waybill_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    w.consignee.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 relative">
-      <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Reports &amp; Analytics</h1>
-          <p className="text-sm text-slate-400 mt-1">Read-only operational performance logs and financial summaries</p>
-        </div>
-
-        {/* Export Buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleExport('excel')}
-            disabled={exporting || loading || !reportData}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 hover:text-white px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
-          >
-            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export to Excel
-          </button>
-          <button
-            onClick={() => handleExport('pdf')}
-            disabled={exporting || loading || !reportData}
-            className="flex items-center gap-2 bg-orange-550 hover:bg-orange-400 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors shadow-lg shadow-orange-500/20 cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Export to PDF
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-slate-800 mb-8 overflow-x-auto">
-        <nav className="flex space-x-6 min-w-max pb-1">
-          {REPORT_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setReportData(null);
-              }}
-              className={`pb-4 px-1 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? 'border-orange-500 text-orange-400 font-bold'
-                  : 'border-transparent text-slate-400 hover:text-white'
-              }`}
+    <div className="min-h-screen font-sans text-white pb-12">
+      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col gap-8">
+        
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Reports &amp; Overview</h1>
+            <p className="text-sm text-slate-400 mt-1">Key metrics and recent operational logs</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 bg-black/40 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-xl">
+            <select
+              value={reportType}
+              onChange={e => setReportType(e.target.value)}
+              className="bg-black/50 border border-white/5 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-500 transition-colors font-semibold text-cyan-400"
             >
-              {tab.name}
+              <option value="overview">Overview</option>
+              <option value="company_statement">Company Statement</option>
+            </select>
+            
+            {reportType === 'overview' && (
+              <>
+                <select 
+                  value={exportRange} 
+                  onChange={e => setExportRange(e.target.value)} 
+                  className="bg-black/50 border border-white/5 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-500 transition-colors"
+                >
+              <option value="monthly">Monthly</option>
+              <option value="daily">Daily</option>
+            </select>
+            <input 
+              type="date" 
+              value={exportDate} 
+              onChange={e => setExportDate(e.target.value)} 
+              className="bg-black/50 border border-white/5 rounded-xl px-3 py-2 text-xs text-white/70 outline-none focus:border-cyan-500 transition-colors [color-scheme:dark]" 
+            />
+            <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block"></div>
+            <button
+              onClick={() => handleExport('excel')}
+              disabled={exporting}
+              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-emerald-400 px-4 py-2 rounded-xl text-xs font-semibold border border-emerald-500/20 transition-colors cursor-pointer"
+            >
+              Excel
             </button>
-          ))}
-        </nav>
-      </div>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={exporting}
+              className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-lg shadow-cyan-500/20"
+            >
+              {exporting ? 'Exporting...' : 'PDF'}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-semibold border border-white/10 transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print
+            </button>
+            </>
+            )}
+          </div>
+        </header>
 
-      {/* Filters Section */}
-      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-5 mb-8 flex flex-wrap items-end gap-5">
-        {/* Date Filters (for time-based reports) */}
-        {['bookings', 'expenses', 'income'].includes(activeTab) && (
+        {reportType === 'company_statement' ? (
+          <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl">
+            <h2 className="text-lg font-bold mb-4 text-white">Search Company</h2>
+            <div className="relative max-w-md">
+              <input 
+                type="text" 
+                placeholder="Type company name..." 
+                value={companySearch}
+                onChange={e => setCompanySearch(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-white placeholder:text-white/30"
+              />
+              {companies.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+                  {companies.map(c => (
+                    <div 
+                      key={c.id} 
+                      onClick={() => navigate(`/reports/companies/${c.id}`)}
+                      className="px-4 py-3 hover:bg-white/10 cursor-pointer text-sm text-white flex justify-between items-center transition-colors"
+                    >
+                      <span className="font-semibold">{c.name}</span>
+                      <span className="text-xs text-white/40">{c.district || ''}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
           <>
-            <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Range</label>
-              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                <button
-                  onClick={() => setRange('daily')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    range === 'daily' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Daily
-                </button>
-                <button
-                  onClick={() => setRange('monthly')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    range === 'monthly' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Monthly
-                </button>
+        {/* Top Stat Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            { label: 'Waybills This Month', val: data.stats.waybills.value, delta: data.stats.waybills.delta, prefix: '' },
+            { label: 'Money Collected', val: data.stats.collected.value, delta: data.stats.collected.delta, prefix: '₹' },
+            { label: 'Money Spent', val: data.stats.spent.value, delta: data.stats.spent.delta, prefix: '₹' },
+            { label: 'Net Balance', val: data.stats.net.value, delta: data.stats.net.delta, prefix: '₹', isRed: data.stats.net.value < 0 },
+            { label: 'Pending Deliveries', val: data.stats.pending.value, delta: null, prefix: '' }
+          ].map((stat, i) => (
+            <div key={i} className="bg-black/40 backdrop-blur-md rounded-2xl p-5 flex flex-col justify-between border border-white/10 shadow-xl">
+              <span className="text-xs font-semibold text-white/50 mb-2">{stat.label}</span>
+              <div className="flex items-end justify-between gap-2">
+                <span className={`text-2xl font-bold ${stat.isRed ? 'text-red-400' : 'text-white'}`}>
+                  {stat.prefix === '₹' ? INR(stat.val) : stat.val}
+                </span>
+                {stat.delta !== null && stat.delta !== 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${stat.delta > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {stat.delta > 0 ? '+' : ''}{stat.delta.toFixed(1)}%
+                  </span>
+                )}
               </div>
             </div>
+          ))}
+        </div>
 
-            <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Target Date</label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-orange-500/50 h-[38px] [color-scheme:dark]"
-              />
-            </div>
-          </>
-        )}
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Main Left Column */}
+          <div className="flex-1 flex flex-col gap-8 min-w-0">
+            
+            {/* Trends Chart */}
+            <section className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl">
+              <h2 className="text-sm font-bold mb-6 text-white">Financial Trends (6 Months)</h2>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorSpent" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#64748b" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#64748b" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val >= 1000 ? (val/1000).toFixed(0)+'k' : val}`} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333333', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                      formatter={(value) => [INR(value), undefined]}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="collected" name="Money Collected" stroke="#06b6d4" strokeWidth={3} fillOpacity={1} fill="url(#colorCollected)" />
+                    <Area type="monotone" dataKey="spent" name="Money Spent" stroke="#64748b" strokeWidth={2} fillOpacity={1} fill="url(#colorSpent)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
 
-        {/* Staff/Sender Dropdown */}
-        {['senders', 'staff'].includes(activeTab) && (
-          <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Select Staff</label>
-            <select
-              value={selectedStaffId}
-              onChange={e => setSelectedStaffId(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-orange-500/50 h-[38px] min-w-[200px]"
-            >
-              {staffList.map(s => (
-                <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-              ))}
-            </select>
+            {/* Recent Waybills Table */}
+            <section className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl overflow-hidden flex flex-col">
+              <div className="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-sm font-bold text-white">Recent Waybills</h2>
+                <input 
+                  type="text"
+                  placeholder="Search by Waybill No or Consignee..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="bg-black/50 border border-white/5 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-cyan-500 w-full sm:w-64 text-white placeholder:text-white/30"
+                />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 text-white/50 font-semibold uppercase tracking-wider bg-black/30">
+                      <th className="px-5 py-3">Date</th>
+                      <th className="px-5 py-3">Waybill No</th>
+                      <th className="px-5 py-3">Route</th>
+                      <th className="px-5 py-3">Consignee</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Payment</th>
+                      <th className="px-5 py-3 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-white/80 font-medium">
+                    {filteredWaybills.map((w, idx) => (
+                      <React.Fragment key={idx}>
+                        <tr 
+                          onClick={() => setExpandedRowId(expandedRowId === w.waybill_number ? null : w.waybill_number)}
+                          className={`hover:bg-white/5 cursor-pointer transition-colors ${expandedRowId === w.waybill_number ? 'bg-white/10' : ''}`}
+                        >
+                          <td className="px-5 py-4">{w.date}</td>
+                          <td className="px-5 py-4 font-bold text-white">{w.waybill_number}</td>
+                          <td className="px-5 py-4 truncate max-w-[150px]">{w.route}</td>
+                          <td className="px-5 py-4 truncate max-w-[150px]">{w.consignee}</td>
+                          <td className="px-5 py-4">
+                            <span className="inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/50 text-white/70 border border-white/10">
+                              {w.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              w.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                              w.payment_status === 'pending' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
+                              'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              {w.payment_status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-slate-500">
+                            <svg className={`w-4 h-4 transition-transform ${expandedRowId === w.waybill_number ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </td>
+                        </tr>
+                        {/* Expanded Detail Row */}
+                        {expandedRowId === w.waybill_number && (
+                          <tr className="bg-black/30">
+                            <td colSpan={7} className="px-5 py-4 border-l-4 border-cyan-500">
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div className="flex gap-8">
+                                  <div>
+                                    <div className="text-[10px] text-white/50 uppercase font-bold mb-1">Freight Amount</div>
+                                    <div className="text-sm font-bold text-white">{INR(w.freight)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] text-white/50 uppercase font-bold mb-1">Assigned Staff</div>
+                                    <div className="text-sm text-white/80">{w.staff}</div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3">
+                                  <button onClick={() => handlePrintPdf(w.waybill_number)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white border border-white/10 transition-colors">
+                                    View PDF
+                                  </button>
+                                  <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white border border-white/10 transition-colors">
+                                    Track Status
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                    {filteredWaybills.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                          No recent waybills found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
-        )}
 
-        {/* Vehicle Dropdown */}
-        {activeTab === 'vehicles' && (
-          <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Select Vehicle</label>
-            <select
-              value={selectedVehicleId}
-              onChange={e => setSelectedVehicleId(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-orange-500/50 h-[38px] min-w-[200px]"
-            >
-              {vehicleList.map(v => (
-                <option key={v.id} value={v.id}>{v.vehicle_number} - {v.vehicle_name}</option>
-              ))}
-            </select>
-          </div>
-        )}
+          {/* Right Sidebar Columns */}
+          <div className="w-full lg:w-80 flex flex-col gap-8 shrink-0">
+            
+            {/* This Week */}
+            <section className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl">
+              <h2 className="text-sm font-bold text-white mb-5">This Week</h2>
+              <div className="flex flex-col gap-5">
+                <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                  <span className="text-xs font-semibold text-white/50">Deliveries Completed</span>
+                  <span className="text-xl font-bold text-white">{data.sidebar.deliveriesCompleted}</span>
+                </div>
+                <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                  <span className="text-xs font-semibold text-white/50">On-Time Rate</span>
+                  <span className="text-xl font-bold text-emerald-400">{data.sidebar.onTimeRate}%</span>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-semibold text-white/50">Active Trips Today</span>
+                  <span className="text-xl font-bold text-cyan-400">{data.sidebar.activeTrips}</span>
+                </div>
+              </div>
+            </section>
 
-        {/* Parcels Status Dropdown */}
-        {activeTab === 'parcels' && (
-          <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Status Filter</label>
-            <select
-              value={selectedStatus}
-              onChange={e => setSelectedStatus(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-orange-500/50 h-[38px] min-w-[180px]"
-            >
-              <option value="">All Statuses</option>
-              <option value="booked">Booked</option>
-              <option value="loaded">Loaded</option>
-              <option value="in_transit">In Transit</option>
-              <option value="arrived">Arrived</option>
-              <option value="out_for_delivery">Out For Delivery</option>
-              <option value="delivered">Delivered</option>
-              <option value="returned">Returned</option>
-            </select>
+            {/* Top Routes */}
+            <section className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl">
+              <h2 className="text-sm font-bold text-white mb-5">Top Routes (This Month)</h2>
+              <div className="flex flex-col gap-4">
+                {data.sidebar.topRoutes.map((route, i) => (
+                  <div key={i} className="flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-[10px] font-bold text-white/50 border border-white/10 group-hover:border-cyan-500/50 transition-colors">
+                        {i + 1}
+                      </div>
+                      <span className="text-xs font-medium text-white/80 truncate max-w-[150px]">{route.route}</span>
+                    </div>
+                    <span className="text-xs font-bold text-white bg-black/50 px-2 py-1 rounded-md border border-white/10">
+                      {route.count}
+                    </span>
+                  </div>
+                ))}
+                {data.sidebar.topRoutes.length === 0 && (
+                  <div className="text-xs text-white/50">No route data for this month.</div>
+                )}
+              </div>
+            </section>
+            
           </div>
+        </div>
+        </>
         )}
       </div>
-
-      {/* Main Content */}
-      {loading ? (
-        <div className="flex justify-center items-center py-24">
-          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : !reportData ? (
-        <div className="bg-slate-900/20 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm">
-          No report data matches the selected criteria.
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {activeTab === 'bookings' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Bookings</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalCount}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Packages Booked</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalPackages}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Weight</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalWeight.toFixed(2)} KG</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Freight Value</span>
-                  <p className="text-orange-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalRevenue)}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'senders' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Shipments</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalCount}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Packages Sent</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalPackages}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Freight Revenue</span>
-                  <p className="text-orange-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalRevenue)}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'pending-payments' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Pending Bookings</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalCount}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Outstanding</span>
-                  <p className="text-red-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalPendingAmount)}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'parcels' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Consignments</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalCount}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Packages Count</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalPackages}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Cumulative Weight</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalWeight.toFixed(2)} KG</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'staff' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Assigned Bookings</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.bookingsCount}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Present Days</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.attendance.presentCount} Days</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider font-semibold">Active Advances</span>
-                  <p className="text-red-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalAdvancesOutstanding)}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'vehicles' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Collection Volume</span>
-                  <p className="text-emerald-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalCollectionsValue)}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Logged Trips</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.collectionsCount}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'expenses' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider font-black">Grand Total Expenses</span>
-                  <p className="text-red-450 text-2xl font-bold mt-1">{INR(reportData.summary.grandTotalExpenses)}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Fuel Costs</span>
-                  <p className="text-white text-2xl font-bold mt-1">{INR(reportData.summary.totalFuel)}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Wages (Drivers/Helpers)</span>
-                  <p className="text-white text-2xl font-bold mt-1">{INR(reportData.summary.totalDriverWage + reportData.summary.totalHelperWage)}</p>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'income' && (
-              <>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Realized Cash Volume</span>
-                  <p className="text-emerald-400 text-2xl font-bold mt-1">{INR(reportData.summary.totalIncomeValue)}</p>
-                </div>
-                <div className="bg-slate-900/60 border border-slate-700/40 rounded-2xl p-5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Accounts Realized</span>
-                  <p className="text-white text-2xl font-bold mt-1">{reportData.summary.totalCount} paid invoices</p>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Simple Chart Visualization */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-4">Visual Analytics Summary</h3>
-            {/* SVG/div bar chart */}
-            <div className="space-y-4">
-              {activeTab === 'expenses' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { name: 'Fuel Costs', val: reportData.summary.totalFuel },
-                    { name: 'Rent', val: reportData.summary.totalRent },
-                    { name: 'Driver Wages', val: reportData.summary.totalDriverWage },
-                    { name: 'Helper Wages', val: reportData.summary.totalHelperWage },
-                    { name: 'Advances', val: reportData.summary.totalAdvance },
-                    { name: 'Other', val: reportData.summary.totalOther }
-                  ].map(item => {
-                    const percent = reportData.summary.grandTotalExpenses > 0 ? (item.val / reportData.summary.grandTotalExpenses) * 100 : 0;
-                    return (
-                      <div key={item.name} className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-400">{item.name}</span>
-                          <span className="text-slate-200 font-bold">{INR(item.val)} ({percent.toFixed(0)}%)</span>
-                        </div>
-                        <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
-                          <div className="bg-red-500 h-full rounded-full" style={{ width: `${percent}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {activeTab === 'bookings' && (
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Monthly Target Metric</span>
-                    <span className="text-orange-400 font-bold">Volume: {reportData.summary.totalCount} packages</span>
-                  </div>
-                  <div className="w-full bg-slate-950 h-4 rounded-full overflow-hidden border border-slate-800 relative">
-                    <div className="bg-orange-500 h-full rounded-full" style={{ width: `${Math.min((reportData.summary.totalCount / 50) * 100, 100)}%` }} />
-                  </div>
-                  <span className="text-[10px] text-slate-500">Benchmark: 50 shipments per period target.</span>
-                </div>
-              )}
-
-              {activeTab !== 'expenses' && activeTab !== 'bookings' && (
-                <div className="py-6 text-center text-xs text-slate-500">
-                  Detailed analytics logs rendered below in structural table format.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Details Table */}
-          <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">Detailed Report Entries</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-500 font-semibold uppercase tracking-wider">
-                    {activeTab === 'bookings' && (
-                      <>
-                        <th className="px-6 py-3">Waybill No</th>
-                        <th className="px-6 py-3">Booking Date</th>
-                        <th className="px-6 py-3">Consignee</th>
-                        <th className="px-6 py-3">Route</th>
-                        <th className="px-6 py-3 text-right">Packages</th>
-                        <th className="px-6 py-3 text-right">Weight (KG)</th>
-                        <th className="px-6 py-3 text-right">Freight</th>
-                        <th className="px-6 py-3">Payment</th>
-                      </>
-                    )}
-                    {activeTab === 'senders' && (
-                      <>
-                        <th className="px-6 py-3">Waybill No</th>
-                        <th className="px-6 py-3">Booking Date</th>
-                        <th className="px-6 py-3">Consignee</th>
-                        <th className="px-6 py-3">Route</th>
-                        <th className="px-6 py-3 text-right">Packages</th>
-                        <th className="px-6 py-3 text-right">Weight</th>
-                        <th className="px-6 py-3 text-right">Freight</th>
-                        <th className="px-6 py-3">Payment</th>
-                      </>
-                    )}
-                    {activeTab === 'pending-payments' && (
-                      <>
-                        <th className="px-6 py-3">Waybill No</th>
-                        <th className="px-6 py-3">Booking Date</th>
-                        <th className="px-6 py-3">Consignee</th>
-                        <th className="px-6 py-3">Mobile</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3 text-right">Outstanding</th>
-                        <th className="px-6 py-3">Due Date</th>
-                      </>
-                    )}
-                    {activeTab === 'parcels' && (
-                      <>
-                        <th className="px-6 py-3">Waybill No</th>
-                        <th className="px-6 py-3">Booking Date</th>
-                        <th className="px-6 py-3">Consignee</th>
-                        <th className="px-6 py-3">Route</th>
-                        <th className="px-6 py-3 text-right">Packages</th>
-                        <th className="px-6 py-3 text-right">Weight</th>
-                        <th className="px-6 py-3">Status</th>
-                      </>
-                    )}
-                    {activeTab === 'staff' && (
-                      <>
-                        <th className="px-6 py-3">Week Period</th>
-                        <th className="px-6 py-3 text-right">Base Wage</th>
-                        <th className="px-6 py-3 text-right">Paid Wage</th>
-                      </>
-                    )}
-                    {activeTab === 'vehicles' && (
-                      <>
-                        <th className="px-6 py-3">Date</th>
-                        <th className="px-6 py-3">Driver</th>
-                        <th className="px-6 py-3 text-right">Fuel Expense</th>
-                        <th className="px-6 py-3 text-right">Driver Wage</th>
-                        <th className="px-6 py-3 text-right">Collection</th>
-                      </>
-                    )}
-                    {activeTab === 'expenses' && (
-                      <>
-                        <th className="px-6 py-3">Date</th>
-                        <th className="px-6 py-3">Vehicle</th>
-                        <th className="px-6 py-3">Driver</th>
-                        <th className="px-6 py-3 text-right">Fuel</th>
-                        <th className="px-6 py-3 text-right">Wages</th>
-                        <th className="px-6 py-3 text-right">Advance</th>
-                        <th className="px-6 py-3 text-right">Other</th>
-                        <th className="px-6 py-3 text-right">Total</th>
-                      </>
-                    )}
-                    {activeTab === 'income' && (
-                      <>
-                        <th className="px-6 py-3">Waybill No</th>
-                        <th className="px-6 py-3">Paid Date</th>
-                        <th className="px-6 py-3">Consignee</th>
-                        <th className="px-6 py-3">Payment Method</th>
-                        <th className="px-6 py-3 text-right">Amount</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-350 font-medium">
-                  {activeTab === 'bookings' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 font-bold text-white">{row.waybill_number}</td>
-                      <td className="px-6 py-3">{row.booking_date}</td>
-                      <td className="px-6 py-3">{row.consignee_name}</td>
-                      <td className="px-6 py-3">{row.from_location} &rarr; {row.to_location}</td>
-                      <td className="px-6 py-3 text-right">{row.packages}</td>
-                      <td className="px-6 py-3 text-right">{row.weight.toFixed(2)}</td>
-                      <td className="px-6 py-3 text-right font-bold text-white">{INR(row.grand_total)}</td>
-                      <td className="px-6 py-3">
-                        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                          row.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20' : 'bg-orange-500/10 text-orange-450 border border-orange-500/20'
-                        }`}>{row.payment_status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {activeTab === 'senders' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 font-bold text-white">{row.waybill_number}</td>
-                      <td className="px-6 py-3">{row.booking_date}</td>
-                      <td className="px-6 py-3">{row.consignee_name}</td>
-                      <td className="px-6 py-3">{row.from_location} &rarr; {row.to_location}</td>
-                      <td className="px-6 py-3 text-right">{row.packages}</td>
-                      <td className="px-6 py-3 text-right">{row.weight.toFixed(2)}</td>
-                      <td className="px-6 py-3 text-right font-bold text-white">{INR(row.grand_total)}</td>
-                      <td className="px-6 py-3">
-                        <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase">{row.payment_status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {activeTab === 'pending-payments' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 font-bold text-white">{row.waybill_number}</td>
-                      <td className="px-6 py-3">{row.booking_date}</td>
-                      <td className="px-6 py-3">{row.consignee_name}</td>
-                      <td className="px-6 py-3">{row.consignee_mobile}</td>
-                      <td className="px-6 py-3 text-red-400 uppercase font-bold">{row.payment_status}</td>
-                      <td className="px-6 py-3 text-right font-bold text-red-400">{INR(row.amount)}</td>
-                      <td className="px-6 py-3">{row.due_date || 'N/A'}</td>
-                    </tr>
-                  ))}
-                  {activeTab === 'parcels' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 font-bold text-white">{row.waybill_number}</td>
-                      <td className="px-6 py-3">{row.booking_date}</td>
-                      <td className="px-6 py-3">{row.consignee_name}</td>
-                      <td className="px-6 py-3">{row.from_location} &rarr; {row.to_location}</td>
-                      <td className="px-6 py-3 text-right">{row.packages}</td>
-                      <td className="px-6 py-3 text-right">{row.weight.toFixed(2)}</td>
-                      <td className="px-6 py-3">
-                        <span className="inline-flex px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 capitalize">{row.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {activeTab === 'staff' && reportData?.salaryHistory?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 text-white">{row.week}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.base_amount)}</td>
-                      <td className="px-6 py-3 text-right font-bold text-emerald-400">{INR(row.paid_amount)}</td>
-                    </tr>
-                  ))}
-                  {activeTab === 'vehicles' && reportData?.collections?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3">{row.date}</td>
-                      <td className="px-6 py-3 text-white">{row.driver_name}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.fuel_expense)}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.driver_wage)}</td>
-                      <td className="px-6 py-3 text-right font-bold text-emerald-400">{INR(row.total_collection)}</td>
-                    </tr>
-                  ))}
-                  {activeTab === 'expenses' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3">{row.date}</td>
-                      <td className="px-6 py-3 font-semibold text-white">{row.vehicle_number}</td>
-                      <td className="px-6 py-3">{row.driver_name}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.fuel)}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.driver_wage + row.helper_wage)}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.advance)}</td>
-                      <td className="px-6 py-3 text-right">{INR(row.other)}</td>
-                      <td className="px-6 py-3 text-right font-bold text-red-400">{INR(row.total)}</td>
-                    </tr>
-                  ))}
-                  {activeTab === 'income' && reportData?.rows?.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-850/40">
-                      <td className="px-6 py-3 font-bold text-white">{row.waybill_number}</td>
-                      <td className="px-6 py-3">{row.paid_date}</td>
-                      <td className="px-6 py-3">{row.consignee_name}</td>
-                      <td className="px-6 py-3 capitalize">{row.payment_method}</td>
-                      <td className="px-6 py-3 text-right font-bold text-emerald-400">{INR(row.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

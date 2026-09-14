@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const INR = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
 
-export default function PendingPaymentsPage() {
+export default function PendingPaymentsPage({ embedded = false }) {
   const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,12 +45,14 @@ export default function PendingPaymentsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Pending Payments</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Manage outstanding waybill invoices and credit collections</p>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Pending Payments</h1>
+            <p className="text-slate-400 text-sm mt-0.5">Manage outstanding waybill invoices and credit collections</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

@@ -20,6 +20,17 @@ enum Role {
   viewer
 }
 
+enum TripStatus {
+  draft
+  in_progress
+  completed
+}
+
+enum StopRole {
+  pickup
+  drop
+}
+
 enum StaffRole {
   driver
   staff
@@ -94,12 +105,13 @@ model Staff {
   role_other_specify String?    @map("role_other")
   created_at         DateTime   @default(now())
 
-  assigned_waybills Waybill[]    @relation("WaybillStaff")
-  attendances           Attendance[]
-  salary_weeks          SalaryWeek[]
-  advances              StaffAdvance[]
-  driver_trips          DailyCollection[] @relation("TripDriver")
-  helper_trips          DailyCollection[] @relation("TripHelper")
+  assigned_waybills Waybill[]        @relation("WaybillStaff")
+  attendances       Attendance[]
+  salary_weeks      SalaryWeek[]
+  advances          StaffAdvance[]
+  driver_trips      DailyCollection[] @relation("TripDriver")
+  helper_trips      DailyCollection[] @relation("TripHelper")
+  trips             Trip[]            @relation("TripDriver")
 
   @@map("staff")
 }
@@ -191,11 +203,13 @@ model Vehicle {
   id                String    @id @default(uuid())
   vehicle_number    String    @unique
   vehicle_name      String?
+  capacity_kg       Decimal?  @db.Decimal(10, 3)
   insurance_expiry  DateTime? @db.Date
   rc_expiry         DateTime? @db.Date
   pollution_expiry  DateTime? @db.Date
   last_service_date DateTime? @db.Date
   collections       DailyCollection[]
+  trips             Trip[]
 
   @@map("vehicles")
 }
@@ -255,12 +269,21 @@ model Waybill {
   daily_collection_id String?
   daily_collection    DailyCollection? @relation(fields: [daily_collection_id], references: [id], onDelete: SetNull)
 
+  stop_item  StopItem?
+
   created_by String
   creator    User     @relation("WaybillCreator", fields: [created_by], references: [id])
   created_at DateTime @default(now())
 
+  sender_company_id   String?
+  sender_company      Company? @relation("SenderCompany", fields: [sender_company_id], references: [id])
+  receiver_company_id String?
+  receiver_company    Company? @relation("ReceiverCompany", fields: [receiver_company_id], references: [id])
+
   @@index([booking_date])
   @@index([status])
+  @@index([sender_company_id])
+  @@index([receiver_company_id])
   @@map("waybills")
 }
 
@@ -346,5 +369,65 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+// ─── Trips (Multi-Stop Model) ─────────────────────────────────────────────────
 
+model Trip {
+  id         String     @id @default(uuid())
+  vehicle_id String
+  vehicle    Vehicle    @relation(fields: [vehicle_id], references: [id])
+  driver_id  String
+  driver     Staff      @relation("TripDriver", fields: [driver_id], references: [id])
+  trip_date  DateTime   @db.Date
+  district   String
+  status     TripStatus @default(draft)
+  created_at DateTime   @default(now())
+
+  stops Stop[]
+
+  @@index([trip_date])
+  @@index([status])
+  @@map("trips")
+}
+
+model Stop {
+  id       String   @id @default(uuid())
+  trip_id  String
+  trip     Trip     @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+  location String
+  role     StopRole
+  sequence Int
+
+  items StopItem[]
+
+  @@unique([trip_id, sequence])
+  @@map("stops")
+}
+
+model StopItem {
+  id         String  @id @default(uuid())
+  stop_id    String
+  stop       Stop    @relation(fields: [stop_id], references: [id], onDelete: Cascade)
+  waybill_id String  @unique
+  waybill    Waybill @relation(fields: [waybill_id], references: [id])
+  weight     Decimal @db.Decimal(10, 3)
+
+  @@map("stop_items")
+}
+
+// ─── Companies ────────────────────────────────────────────────────────────────
+
+model Company {
+  id         String   @id @default(uuid())
+  name       String
+  district   String?
+  phone      String?
+  address    String?
+  created_at DateTime @default(now())
+
+  sent_waybills     Waybill[] @relation("SenderCompany")
+  received_waybills Waybill[] @relation("ReceiverCompany")
+
+  @@unique([name])
+  @@map("companies")
+}
 

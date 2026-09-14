@@ -142,7 +142,7 @@ export default function StaffDetailsPage() {
   const { staff, total_balance, weeks } = data;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 pb-12">
+    <div className="min-h-screen bg-transparent pb-12">
       <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header Profile Section */}

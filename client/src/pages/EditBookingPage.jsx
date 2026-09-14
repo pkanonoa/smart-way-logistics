@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getWaybill, updateWaybill } from '../api/waybillApi';
+import CompanyAutocomplete from '../components/CompanyAutocomplete';
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,10 +76,12 @@ export default function EditBookingPage() {
           consignor_contact: w.consignor_contact || '',
           consignor_address: w.consignor_address || '',
           consignor_gst: w.consignor_gst || '',
-          consignee_name: w.consignee_name,
-          consignee_mobile: w.consignee_mobile,
-          consignee_address: w.consignee_address,
+          consignee_name: w.consignee_name || '',
+          consignee_mobile: w.consignee_mobile || '',
+          consignee_address: w.consignee_address || '',
           consignee_gst: w.consignee_gst || '',
+          sender_company_id: w.sender_company_id || null,
+          receiver_company_id: w.receiver_company_id || null,
           no_of_packages: String(w.no_of_packages),
           package_type: w.package_type,
           weight: String(w.weight),
@@ -237,8 +240,28 @@ export default function EditBookingPage() {
         }>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Business Name" required error={errors.consignor_name}>
-              <input name="consignor_name" value={form.consignor_name} onChange={handleChange}
-                placeholder="Sender company name" className={inputCls(errors.consignor_name)} />
+              <CompanyAutocomplete
+                value={form.consignor_name}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, consignor_name: e.target ? e.target.value : e.target }));
+                  if (e.target && errors.consignor_name) setErrors(prev => ({ ...prev, consignor_name: null }));
+                }}
+                onSelectCompany={(company) => {
+                  if (company) {
+                    setForm(prev => ({
+                      ...prev,
+                      consignor_name: company.name,
+                      consignor_contact: company.phone || prev.consignor_contact,
+                      consignor_address: company.address || prev.consignor_address,
+                      sender_company_id: company.id
+                    }));
+                  } else {
+                    setForm(prev => ({ ...prev, sender_company_id: null }));
+                  }
+                }}
+                placeholder="Sender company name"
+                className={inputCls(errors.consignor_name)}
+              />
             </Field>
             <Field label="Contact Person" error={errors.consignor_contact}>
               <input name="consignor_contact" value={form.consignor_contact} onChange={handleChange}
@@ -269,9 +292,29 @@ export default function EditBookingPage() {
           </svg>
         }>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Name" required error={errors.consignee_name}>
-              <input name="consignee_name" value={form.consignee_name} onChange={handleChange}
-                placeholder="Receiver name" className={inputCls(errors.consignee_name)} />
+            <Field label="Business Name" required error={errors.consignee_name}>
+              <CompanyAutocomplete
+                value={form.consignee_name}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, consignee_name: e.target ? e.target.value : e.target }));
+                  if (e.target && errors.consignee_name) setErrors(prev => ({ ...prev, consignee_name: null }));
+                }}
+                onSelectCompany={(company) => {
+                  if (company) {
+                    setForm(prev => ({
+                      ...prev,
+                      consignee_name: company.name,
+                      consignee_mobile: company.phone || prev.consignee_mobile,
+                      consignee_address: company.address || prev.consignee_address,
+                      receiver_company_id: company.id
+                    }));
+                  } else {
+                    setForm(prev => ({ ...prev, receiver_company_id: null }));
+                  }
+                }}
+                placeholder="Receiver company name"
+                className={inputCls(errors.consignee_name)}
+              />
             </Field>
             <Field label="Mobile" error={errors.consignee_mobile}>
               <input name="consignee_mobile" value={form.consignee_mobile} onChange={handleChange}

@@ -73,6 +73,7 @@ router.post('/', requireRole('admin', 'staff'), [
     consignor_name, consignor_contact, consignor_address, consignor_gst,
     assigned_staff_ids = [],
     consignee_name, consignee_mobile, consignee_address, consignee_gst,
+    sender_company_id, receiver_company_id,
     no_of_packages, package_type, weight, volume, description,
     freight, handling_charges, sgst, cgst, igst, payment_mode,
     eway_bill_number, eway_bill_valid_until } = req.body;
@@ -114,6 +115,8 @@ router.post('/', requireRole('admin', 'staff'), [
           consignor_contact: consignor_contact?.trim() || '',
           consignor_address: consignor_address.trim(),
           consignor_gst: consignor_gst?.trim() || null,
+          sender_company_id: sender_company_id || null,
+          receiver_company_id: receiver_company_id || null,
           ...(assigned_staff_ids && assigned_staff_ids.length > 0 && {
             assigned_staff: {
               connect: assigned_staff_ids.map(id => ({ id }))
@@ -219,6 +222,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
       consignee_gst, no_of_packages, package_type, weight, volume, description, payment_mode, status,
       eway_bill_number, eway_bill_valid_until,
       payment_status, payment_due_date, payment_paid_date, payment_method,
+      sender_company_id, receiver_company_id,
       consignor_name, consignor_contact, consignor_address, consignor_gst, assigned_staff_ids } = req.body;
 
     const waybill = await prisma.waybill.update({
@@ -228,6 +232,8 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
         ...(consignor_name && { consignor_name }), ...(consignor_contact && { consignor_contact }),
         ...(consignor_address && { consignor_address }),
         ...(consignor_gst !== undefined && { consignor_gst: consignor_gst || null }),
+        ...(sender_company_id !== undefined && { sender_company_id: sender_company_id || null }),
+        ...(receiver_company_id !== undefined && { receiver_company_id: receiver_company_id || null }),
         ...(assigned_staff_ids && {
           assigned_staff: {
             set: assigned_staff_ids.map(id => ({ id }))

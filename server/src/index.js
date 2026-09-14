@@ -18,7 +18,7 @@ const dashboardRoutes  = require('./routes/dashboard');
 const reportsRoutes    = require('./routes/reports');
 const usersRoutes      = require('./routes/users');
 const tripsRoutes      = require('./routes/trips');
-
+const companiesRoutes  = require('./routes/companies');
 const { authenticateToken, requireRole } = require('./middleware/auth');
 
 const app  = express();
@@ -67,7 +67,7 @@ app.use('/api',            paymentsRoutes);
 app.use('/api/users',      requireRole('admin'), usersRoutes);
 app.use('/api/trips',      tripsRoutes);
 app.use('/api/activity-logs', require('./routes/activityLogs'));
-
+app.use('/api/companies', companiesRoutes);
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 

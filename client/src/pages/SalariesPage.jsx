@@ -28,7 +28,7 @@ export default function SalariesPage() {
   const totalOwed = staffList.reduce((sum, s) => sum + s.total_balance, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-transparent">
       <div className="fixed top-0 left-0 w-[500px] h-[400px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">

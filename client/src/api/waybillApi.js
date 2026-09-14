@@ -46,13 +46,19 @@ export async function deleteWaybill(id) {
   return data;
 }
 
-export async function downloadWaybillPdf(id, isDuplicate = false) {
+export async function fetchWaybillPdfBlob(id, isDuplicate = false) {
   const url = `/waybills/${id}/pdf${isDuplicate ? '?copy=duplicate' : ''}`;
   const response = await api.get(url, { responseType: 'blob' });
-  const blob = new Blob([response.data], { type: 'application/pdf' });
+  return new Blob([response.data], { type: 'application/pdf' });
+}
+
+export async function downloadWaybillPdf(id, isDuplicate = false) {
+  const blob = await fetchWaybillPdfBlob(id, isDuplicate);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  link.href = url;
   link.download = isDuplicate ? `waybill-DUPLICATE.pdf` : `waybill.pdf`;
   link.click();
-  URL.revokeObjectURL(link.href);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return blob;
 }

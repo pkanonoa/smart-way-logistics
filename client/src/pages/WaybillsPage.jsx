@@ -17,7 +17,7 @@ const formatDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
-export default function WaybillsPage() {
+export default function WaybillsPage({ embedded = false }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialStatus = searchParams.get('status') || '';
@@ -51,29 +51,30 @@ export default function WaybillsPage() {
   }, [search, status, startDate, endDate, ewayMissing]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 pb-12">
-      <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+    <div className={embedded ? 'pb-12' : 'min-h-screen bg-transparent pb-12'}>
+      {!embedded && <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />}
 
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <div className={embedded ? 'relative z-10' : 'max-w-7xl mx-auto px-6 py-8 relative z-10'}>
         
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Waybills</h1>
-            <p className="text-slate-400 text-sm mt-0.5">Manage and track all booked parcels</p>
-          </div>
-          
-          {user?.role !== 'viewer' && (
-            <div className="flex items-center gap-3">
-              <Link to="/bookings/new" className="px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-orange-500/20 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New Booking
-              </Link>
+        {/* Header — hidden when embedded (ShipmentsPage provides its own heading) */}
+        {!embedded && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Waybills</h1>
+              <p className="text-slate-400 text-sm mt-0.5">Manage and track all booked parcels</p>
             </div>
-          )}
-        </div>
+            {user?.role !== 'viewer' && (
+              <div className="flex items-center gap-3">
+                <Link to="/shipments?tab=create" className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-cyan-500/20 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  New Booking
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-end">
@@ -87,7 +88,7 @@ export default function WaybillsPage() {
               placeholder="Search by Waybill Number or Consignee..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-orange-500/50"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500/50"
             />
           </div>
           
@@ -103,7 +104,7 @@ export default function WaybillsPage() {
                   return prev;
                 });
               }}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50"
             >
               <option value="">All Statuses</option>
               <option value="in_transit">In Transit (Active)</option>
@@ -123,7 +124,7 @@ export default function WaybillsPage() {
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50 [color-scheme:dark]"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50 [color-scheme:dark]"
             />
           </div>
 
@@ -133,7 +134,7 @@ export default function WaybillsPage() {
               type="date"
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50 [color-scheme:dark]"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-cyan-500/50 [color-scheme:dark]"
             />
           </div>
 
@@ -147,7 +148,7 @@ export default function WaybillsPage() {
                 setEwayMissing(false);
                 setSearchParams({});
               }}
-              className="text-xs text-orange-400 hover:text-orange-300 transition-colors h-10 px-2 flex items-center shrink-0"
+              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors h-10 px-2 flex items-center shrink-0"
             >
               Clear Filters
             </button>
@@ -155,7 +156,7 @@ export default function WaybillsPage() {
         </div>
 
         {ewayMissing && (
-          <div className="bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs px-4 py-2.5 rounded-xl mb-6 flex justify-between items-center">
+          <div className="bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs px-4 py-2.5 rounded-xl mb-6 flex justify-between items-center">
             <span>Currently filtering by <strong>Missing E-Way Bills (In-Transit compliance risks only)</strong>.</span>
             <button 
               onClick={() => {
@@ -165,7 +166,7 @@ export default function WaybillsPage() {
                   return prev;
                 });
               }}
-              className="font-bold underline hover:text-orange-300"
+              className="font-bold underline hover:text-cyan-300"
             >
               Show All
             </button>
@@ -176,7 +177,7 @@ export default function WaybillsPage() {
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl overflow-hidden">
           {loading ? (
              <div className="flex items-center justify-center py-20">
-               <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+               <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
              </div>
           ) : waybills.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
@@ -202,12 +203,12 @@ export default function WaybillsPage() {
                   {waybills.map(wb => (
                     <tr key={wb.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="px-6 py-4">
-                        <Link to={`/waybills/${wb.id}`} className="text-white font-bold hover:text-orange-400 transition-colors">
+                        <Link to={`/waybills/${wb.id}`} className="text-white font-bold hover:text-cyan-400 transition-colors">
                           {wb.waybill_number}
                         </Link>
                         {wb.eway_bill_required && !wb.eway_bill_number && (
                           <div className="mt-1">
-                            <span className="inline-block px-1.5 py-0.5 bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold uppercase rounded">
+                            <span className="inline-block px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold uppercase rounded">
                               E-Way Bill Required
                             </span>
                           </div>
@@ -235,7 +236,7 @@ export default function WaybillsPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <p className="text-white font-semibold">{INR(wb.grand_total)}</p>
-                        <p className={`text-[10px] font-medium uppercase mt-0.5 ${wb.payment?.status === 'paid' ? 'text-emerald-400' : wb.payment?.status === 'credit' ? 'text-blue-400' : 'text-orange-400'}`}>
+                        <p className={`text-[10px] font-medium uppercase mt-0.5 ${wb.payment?.status === 'paid' ? 'text-emerald-400' : wb.payment?.status === 'credit' ? 'text-blue-400' : 'text-cyan-400'}`}>
                           {wb.payment?.status}
                         </p>
                       </td>
@@ -245,7 +246,7 @@ export default function WaybillsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link to={`/waybills/${wb.id}`} className="text-sm text-orange-400 hover:text-orange-300 font-medium">
+                        <Link to={`/waybills/${wb.id}`} className="text-sm text-cyan-400 hover:text-cyan-300 font-medium">
                           View
                         </Link>
                       </td>

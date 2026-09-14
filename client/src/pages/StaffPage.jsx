@@ -4,10 +4,11 @@ import { getstaffs, deletestaff } from '../api/staffApi';
 import { useAuth } from '../context/AuthContext';
 import StaffFormModal from '../components/staff/StaffFormModal';
 import AttendanceModal from '../components/staff/AttendanceModal';
+import { isAdmin } from '../utils/rbac';
 
 const canEdit = (role) => role === 'admin' || role === 'staff';
 
-export default function StaffPage() {
+export default function StaffPage({ embedded = false }) {
   const { user } = useAuth();
 
   const [staffs, setstaffs]     = useState([]);
@@ -83,27 +84,45 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+    <div className={embedded ? '' : 'min-h-screen bg-transparent'}>
       {/* Decorative glow */}
-      <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+      {!embedded && <div className="fixed top-0 right-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className={embedded ? '' : 'max-w-7xl mx-auto px-6 py-8'}>
 
         {/* ── Page Header ─────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Staff</h1>
-            <p className="text-slate-400 text-sm mt-0.5">
-              {staffs.length} staff{staffs.length !== 1 ? 's' : ''} total
-            </p>
-          </div>
+        {!embedded && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Staff</h1>
+              <p className="text-slate-400 text-sm mt-0.5">
+                {staffs.length} staff{staffs.length !== 1 ? 's' : ''} total
+              </p>
+            </div>
 
-          {canEdit(user?.role) && (
+            {canEdit(user?.role) && (
+              <button
+                id="add-staff-btn"
+                onClick={openCreate}
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white
+                  rounded-xl px-5 py-2.5 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20
+                  hover:shadow-orange-500/30 active:scale-[0.98]"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Staff
+              </button>
+            )}
+          </div>
+        )}
+
+        {embedded && canEdit(user?.role) && (
+          <div className="flex justify-end mb-4">
             <button
-              id="add-staff-btn"
               onClick={openCreate}
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white
-                rounded-xl px-5 py-2.5 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20
+                rounded-xl px-4 py-2 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20
                 hover:shadow-orange-500/30 active:scale-[0.98]"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,8 +130,8 @@ export default function StaffPage() {
               </svg>
               Add Staff
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── Search bar ──────────────────────────────────────────────── */}
         <div className="mb-6">
@@ -238,6 +257,15 @@ export default function StaffPage() {
                                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                             </button>
+                            {isAdmin(user) && (
+                              <Link
+                                to={`/users?staffId=${c.id}`}
+                                title="Manage login access"
+                                className="text-xs text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg hover:bg-cyan-500/10 transition-colors border border-cyan-500/20 whitespace-nowrap"
+                              >
+                                Login →
+                              </Link>
+                            )}
                             {user?.role === 'admin' && (
                               <button
                                 onClick={() => setDeleteTarget(c)}

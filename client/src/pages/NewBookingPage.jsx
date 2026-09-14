@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createWaybill } from '../api/waybillApi';
+import CompanyAutocomplete from '../components/CompanyAutocomplete';
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -222,6 +223,8 @@ const EMPTY = {
   consignee_mobile: '',
   consignee_address: '',
   consignee_gst: '',
+  sender_company_id: null,
+  receiver_company_id: null,
   no_of_packages: '1',
   package_type: '',
   weight: '',
@@ -239,7 +242,7 @@ const EMPTY = {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function NewBookingPage() {
+export default function NewBookingPage({ embedded = false }) {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(EMPTY);
@@ -323,21 +326,23 @@ export default function NewBookingPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className={embedded ? "w-full" : "max-w-4xl mx-auto px-6 py-8"}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">New Booking</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Create a new parcel waybill</p>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">New Booking</h1>
+            <p className="text-slate-400 text-sm mt-0.5">Create a new parcel waybill</p>
+          </div>
+          <button onClick={() => navigate('/waybills')}
+            className="text-slate-400 hover:text-white text-sm flex items-center gap-1.5 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            All Waybills
+          </button>
         </div>
-        <button onClick={() => navigate('/waybills')}
-          className="text-slate-400 hover:text-white text-sm flex items-center gap-1.5 transition-colors">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          All Waybills
-        </button>
-      </div>
+      )}
 
       <form onSubmit={handleSubmit} id="new-booking-form" className="space-y-5">
 
@@ -377,8 +382,28 @@ export default function NewBookingPage() {
         }>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Business Name" required error={errors.consignor_name}>
-              <input name="consignor_name" value={form.consignor_name} onChange={handleChange}
-                placeholder="Sender company name" className={inputCls(errors.consignor_name)} />
+              <CompanyAutocomplete
+                value={form.consignor_name}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, consignor_name: e.target ? e.target.value : e.target }));
+                  if (e.target && errors.consignor_name) setErrors(prev => ({ ...prev, consignor_name: null }));
+                }}
+                onSelectCompany={(company) => {
+                  if (company) {
+                    setForm(prev => ({
+                      ...prev,
+                      consignor_name: company.name,
+                      consignor_contact: company.phone || prev.consignor_contact,
+                      consignor_address: company.address || prev.consignor_address,
+                      sender_company_id: company.id
+                    }));
+                  } else {
+                    setForm(prev => ({ ...prev, sender_company_id: null }));
+                  }
+                }}
+                placeholder="Sender company name"
+                className={inputCls(errors.consignor_name)}
+              />
             </Field>
             <Field label="Contact Person" error={errors.consignor_contact}>
               <input name="consignor_contact" value={form.consignor_contact} onChange={handleChange}
@@ -407,9 +432,29 @@ export default function NewBookingPage() {
           </svg>
         }>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Name" required error={errors.consignee_name}>
-              <input name="consignee_name" value={form.consignee_name} onChange={handleChange}
-                placeholder="Receiver name" className={inputCls(errors.consignee_name)} />
+            <Field label="Business Name" required error={errors.consignee_name}>
+              <CompanyAutocomplete
+                value={form.consignee_name}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, consignee_name: e.target ? e.target.value : e.target }));
+                  if (e.target && errors.consignee_name) setErrors(prev => ({ ...prev, consignee_name: null }));
+                }}
+                onSelectCompany={(company) => {
+                  if (company) {
+                    setForm(prev => ({
+                      ...prev,
+                      consignee_name: company.name,
+                      consignee_mobile: company.phone || prev.consignee_mobile,
+                      consignee_address: company.address || prev.consignee_address,
+                      receiver_company_id: company.id
+                    }));
+                  } else {
+                    setForm(prev => ({ ...prev, receiver_company_id: null }));
+                  }
+                }}
+                placeholder="Receiver company name"
+                className={inputCls(errors.consignee_name)}
+              />
             </Field>
             <Field label="Mobile" error={errors.consignee_mobile}>
               <input name="consignee_mobile" value={form.consignee_mobile} onChange={handleChange}

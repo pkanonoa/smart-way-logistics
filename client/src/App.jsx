@@ -19,32 +19,13 @@ import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import AssignTripsPage from './pages/AssignTripsPage';
-import { useAuth } from './context/AuthContext';
-
-function ShellRoute({ children }) {
-  return (
-    <ProtectedRoute>
-      <AppShell>{children}</AppShell>
-    </ProtectedRoute>
-  );
-}
-
-function AdminShellRoute({ children }) {
-  const { user } = useAuth();
-  if (user && user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <ShellRoute>{children}</ShellRoute>;
-}
-
-function WriteShellRoute({ children }) {
-  const { user } = useAuth();
-  if (user && user.role === 'viewer') {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <ShellRoute>{children}</ShellRoute>;
-}
-
+import ShipmentsPage from './pages/ShipmentsPage';
+import TripsPage from './pages/TripsPage';
+import TripBuilderPage from './pages/TripBuilderPage';
+import FleetStaffPage from './pages/FleetStaffPage';
+import PaymentsLedgerPage from './pages/PaymentsLedgerPage';
+import CompaniesPage from './pages/CompaniesPage';
+import CompanyStatementPage from './pages/CompanyStatementPage';
 export default function App() {
   return (
     <BrowserRouter>
@@ -54,28 +35,39 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/track/:waybill_number" element={<PublicTrackingPage />} />
 
-          {/* Protected — inside AppShell */}
-          <Route path="/dashboard"    element={<ShellRoute><DashboardPage /></ShellRoute>} />
-          <Route path="/staff"        element={<ShellRoute><StaffPage /></ShellRoute>} />
-          <Route path="/staff/:id"    element={<ShellRoute><StaffDetailsPage /></ShellRoute>} />
-          <Route path="/vehicles"     element={<ShellRoute><VehiclesPage /></ShellRoute>} />
-          <Route path="/salaries"     element={<ShellRoute><SalariesPage /></ShellRoute>} />
-          <Route path="/bookings/new" element={<WriteShellRoute><NewBookingPage /></WriteShellRoute>} />
-          <Route path="/bookings/edit/:id" element={<WriteShellRoute><EditBookingPage /></WriteShellRoute>} />
-          <Route path="/daily-logs"   element={<ShellRoute><DailyLogsPage /></ShellRoute>} />
-          <Route path="/daily-collections" element={<ShellRoute><DailyCollectionsPage /></ShellRoute>} />
-          <Route path="/assign-trips" element={<WriteShellRoute><AssignTripsPage /></WriteShellRoute>} />
-          <Route path="/reports"      element={<ShellRoute><ReportsPage /></ShellRoute>} />
+          {/* Protected routes wrapped in AppShell */}
+          <Route path="/dashboard" element={<ProtectedRoute><AppShell><DashboardPage /></AppShell></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute roles={['admin', 'accountant', 'viewer']}><AppShell><ReportsPage /></AppShell></ProtectedRoute>} />
 
-          {/* Waybills */}
-          <Route path="/waybills"     element={<ShellRoute><WaybillsPage /></ShellRoute>} />
-          <Route path="/waybills/:id" element={<ShellRoute><WaybillDetailsPage /></ShellRoute>} />
-          <Route path="/payments"     element={<ShellRoute><PendingPaymentsPage /></ShellRoute>} />
-          <Route path="/users"        element={<AdminShellRoute><UserManagementPage /></AdminShellRoute>} />
+          {/* Operations */}
+          <Route path="/shipments" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><ShipmentsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/trips" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><TripsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/trips/builder" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><TripBuilderPage /></AppShell></ProtectedRoute>} />
+          <Route path="/trips/builder/:id" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><TripBuilderPage /></AppShell></ProtectedRoute>} />
+          <Route path="/fleet-staff" element={<ProtectedRoute><AppShell><FleetStaffPage /></AppShell></ProtectedRoute>} />
 
-          {/* Default redirects */}
-          <Route path="/"  element={<Navigate to="/dashboard" replace />} />
-          <Route path="*"  element={<Navigate to="/login" replace />} />
+          {/* Finance */}
+          <Route path="/payments" element={<ProtectedRoute><AppShell><PaymentsLedgerPage /></AppShell></ProtectedRoute>} />
+          <Route path="/daily-collections" element={<ProtectedRoute><AppShell><DailyCollectionsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/pending-payments" element={<ProtectedRoute><AppShell><PendingPaymentsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/salaries" element={<ProtectedRoute roles={['admin', 'accountant']}><AppShell><SalariesPage /></AppShell></ProtectedRoute>} />
+
+          {/* Standalone operations & admin */}
+          <Route path="/staff" element={<ProtectedRoute><AppShell><StaffPage /></AppShell></ProtectedRoute>} />
+          <Route path="/staff/:id" element={<ProtectedRoute><AppShell><StaffDetailsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/vehicles" element={<ProtectedRoute><AppShell><VehiclesPage /></AppShell></ProtectedRoute>} />
+          <Route path="/bookings/new" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><NewBookingPage /></AppShell></ProtectedRoute>} />
+          <Route path="/bookings/edit/:id" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><EditBookingPage /></AppShell></ProtectedRoute>} />
+          <Route path="/daily-logs" element={<ProtectedRoute><AppShell><DailyLogsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/assign-trips" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><AssignTripsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/waybills" element={<ProtectedRoute><AppShell><WaybillsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/waybills/:id" element={<ProtectedRoute><AppShell><WaybillDetailsPage /></AppShell></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute roles={['admin']}><AppShell><UserManagementPage /></AppShell></ProtectedRoute>} />
+          <Route path="/companies" element={<ProtectedRoute roles={['admin', 'staff']}><AppShell><CompaniesPage /></AppShell></ProtectedRoute>} />
+          <Route path="/reports/companies/:companyId" element={<ProtectedRoute roles={['admin', 'accountant', 'viewer']}><AppShell><CompanyStatementPage /></AppShell></ProtectedRoute>} />
+          {/* Fallbacks */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

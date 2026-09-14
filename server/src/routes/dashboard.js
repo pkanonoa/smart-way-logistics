@@ -8,104 +8,51 @@ router.use(authenticateToken);
 // ─── GET /api/dashboard/summary ──────────────────────────────────────────────
 router.get('/summary', async (req, res) => {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    // 1. Today's bookings count
-    const todayBookingsCount = await prisma.waybill.count({
-      where: {
-        booking_date: {
-          gte: todayStart,
-          lte: todayEnd,
-        }
-      }
-    });
+    // 1. Monthly Collections Trend (Last 6 months)
+    const monthlyCollectionsRaw = await prisma.$queryRaw`
+      SELECT 
+        to_char(date, 'Mon YYYY') as month_label,
+        date_trunc('month', date) as month_date,
+        SUM(total_collection) as total
+      FROM daily_collections
+      WHERE date >= NOW() - INTERVAL '6 months'
+      GROUP BY month_date, month_label
+      ORDER BY month_date ASC
+    `;
 
-    // 2. In transit parcels count
-    const inTransitCount = await prisma.waybill.count({
-      where: {
-        status: {
-          in: ['loaded', 'in_transit', 'arrived', 'out_for_delivery']
-        }
-      }
-    });
+    const monthlyCollections = monthlyCollectionsRaw.map(row => ({
+      month: row.month_label.trim(),
+      total: Number(row.total || 0)
+    }));
 
-    // 3. Delivered today count
-    const deliveredTodayCount = await prisma.parcelTracking.count({
-      where: {
-        status: 'delivered',
-        timestamp: {
-          gte: todayStart,
-          lte: todayEnd,
-        }
-      }
-    });
+    // 2. Popular Routes (This month)
+    const popularRoutesRaw = await prisma.$queryRaw`
+      SELECT 
+        from_location,
+        to_location,
+        COUNT(id) as waybills_count,
+        AVG(freight) as avg_freight
+      FROM waybills
+      WHERE booking_date >= ${monthStart}
+      GROUP BY from_location, to_location
+      ORDER BY COUNT(id) DESC
+      LIMIT 6
+    `;
 
-    // 4. Total pending payments amount
-    const pendingPaymentsSum = await prisma.payment.aggregate({
-      where: {
-        status: { in: ['pending', 'credit'] }
-      },
-      _sum: {
-        amount: true
-      }
-    });
-    const totalPendingPayments = Number(pendingPaymentsSum._sum.amount || 0);
-
-    // 5. Today's total collection from DailyCollection logs
-    const todayCollectionSum = await prisma.dailyCollection.aggregate({
-      where: {
-        date: {
-          gte: todayStart,
-          lte: todayEnd,
-        }
-      },
-      _sum: {
-        total_collection: true
-      }
-    });
-    const todayTotalCollection = Number(todayCollectionSum._sum.total_collection || 0);
-
-    // 6. This month's total income (paid waybills)
-    const thisMonthIncomeSum = await prisma.payment.aggregate({
-      where: {
-        status: 'paid',
-        paid_date: {
-          gte: monthStart,
-          lte: todayEnd,
-        }
-      },
-      _sum: {
-        amount: true
-      }
-    });
-    const thisMonthIncome = Number(thisMonthIncomeSum._sum.amount || 0);
-
-    // 7. E-way bill missing count (in-transit ones only)
-    const ewayBillMissingCount = await prisma.waybill.count({
-      where: {
-        grand_total: { gte: 50000 },
-        eway_bill_number: null,
-        status: {
-          not: 'delivered'
-        }
-      }
-    });
+    const popularRoutes = popularRoutesRaw.map(row => ({
+      from: row.from_location,
+      to: row.to_location,
+      waybills: Number(row.waybills_count || 0),
+      avgFreight: Number(row.avg_freight || 0)
+    }));
 
     return res.status(200).json({
-      todayBookingsCount,
-      inTransitCount,
-      deliveredTodayCount,
-      totalPendingPayments,
-      todayTotalCollection,
-      thisMonthIncome,
-      ewayBillMissingCount,
+      monthlyCollections,
+      popularRoutes
     });
   } catch (err) {
     console.error('[Dashboard:summary]', err);

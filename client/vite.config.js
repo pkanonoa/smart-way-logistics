@@ -12,7 +12,6 @@ export default defineConfig({
     port: 5173,
     allowedHosts: true,
     proxy: {
-      // Proxy API calls to the Express backend during development
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,

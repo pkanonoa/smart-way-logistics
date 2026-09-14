@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getWaybill, updateWaybill, deleteWaybill, downloadWaybillPdf, updateWaybillStatus, getWaybillTracking } from '../api/waybillApi';
+import { getWaybill, updateWaybill, deleteWaybill, downloadWaybillPdf, fetchWaybillPdfBlob, updateWaybillStatus, getWaybillTracking } from '../api/waybillApi';
 import { useAuth } from '../context/AuthContext';
 import ActivityHistory from '../components/common/ActivityHistory';
 
@@ -120,7 +120,7 @@ export default function WaybillDetailsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <svg className="w-8 h-8 animate-spin text-orange-500" fill="none" viewBox="0 0 24 24">
+        <svg className="w-8 h-8 animate-spin text-cyan-500" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -132,7 +132,7 @@ export default function WaybillDetailsPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-400">{error || 'Waybill not found'}</p>
-        <button onClick={() => navigate('/waybills')} className="mt-4 text-orange-400 hover:underline">
+        <button onClick={() => navigate('/waybills')} className="mt-4 text-cyan-400 hover:underline">
           &larr; Back to Waybills
         </button>
       </div>
@@ -228,7 +228,7 @@ export default function WaybillDetailsPage() {
               <select
                 value={waybill.status}
                 onChange={handleStatusChange}
-                className="bg-slate-800 text-slate-300 text-xs font-semibold uppercase tracking-wider border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500/50 cursor-pointer hover:bg-slate-700 transition-colors"
+                className="bg-slate-800 text-slate-300 text-xs font-semibold uppercase tracking-wider border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 cursor-pointer hover:bg-slate-700 transition-colors"
               >
                 <option value="booked">Booked</option>
                 <option value="loaded">Loaded</option>
@@ -241,7 +241,7 @@ export default function WaybillDetailsPage() {
             )}
             <button 
               onClick={() => navigate(`/track/${waybill.waybill_number}`)} 
-              className="text-xs text-orange-400 hover:text-orange-300 hover:underline"
+              className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline"
             >
               Public Tracking Link
             </button>
@@ -259,6 +259,32 @@ export default function WaybillDetailsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             {pdfLoading ? 'Generating…' : 'Download PDF'}
+          </button>
+          <button
+            onClick={async () => {
+              setPdfLoading(true);
+              const win = window.open('about:blank', '_blank');
+              try {
+                const blob = await fetchWaybillPdfBlob(id, false);
+                const url = window.URL.createObjectURL(blob);
+                if (win) {
+                  win.location.href = url;
+                }
+              } catch (err) {
+                if (win) win.close();
+                console.error('Print error:', err);
+                alert('Failed to prepare PDF for print.');
+              } finally {
+                setPdfLoading(false);
+              }
+            }}
+            disabled={pdfLoading}
+            className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-xl px-4 py-2 text-sm font-medium transition-all shadow-lg shadow-cyan-500/20"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print
           </button>
           <button
             onClick={() => handleDownloadPdf(true)}
@@ -300,7 +326,7 @@ export default function WaybillDetailsPage() {
         {/* Payment & Charges */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-orange-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-cyan-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -308,7 +334,7 @@ export default function WaybillDetailsPage() {
             </h3>
             {user?.role !== 'viewer' && (
               <button onClick={openPaymentModal}
-                className="text-xs text-orange-400 hover:text-orange-300 hover:underline transition-colors">
+                className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">
                 Edit
               </button>
             )}
@@ -351,7 +377,7 @@ export default function WaybillDetailsPage() {
             </div>
             <div className="flex justify-between font-bold pt-3 border-t border-slate-800 text-lg">
               <span className="text-slate-300">Grand Total</span>
-              <span className="text-orange-400">₹{Number(waybill.grand_total).toFixed(2)}</span>
+              <span className="text-cyan-400">₹{Number(waybill.grand_total).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -359,7 +385,7 @@ export default function WaybillDetailsPage() {
         {/* E-Way Bill */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-orange-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-cyan-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -367,7 +393,7 @@ export default function WaybillDetailsPage() {
             </h3>
             {user?.role !== 'viewer' && (
               <button onClick={() => setShowEWayModal(true)}
-                className="text-xs text-orange-400 hover:text-orange-300 hover:underline transition-colors">
+                className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">
                 Add/Edit
               </button>
             )}
@@ -396,11 +422,11 @@ export default function WaybillDetailsPage() {
               )}
             </div>
           ) : waybill.eway_bill_required ? (
-            <div className="text-center py-6 bg-orange-500/10 rounded-xl border border-orange-500/30 border-dashed">
-              <svg className="w-6 h-6 text-orange-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-6 bg-cyan-500/10 rounded-xl border border-cyan-500/30 border-dashed">
+              <svg className="w-6 h-6 text-cyan-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <p className="text-orange-400 text-sm font-semibold">E-Way Bill Required — Not Added</p>
+              <p className="text-cyan-400 text-sm font-semibold">E-Way Bill Required — Not Added</p>
               <p className="text-slate-400 text-xs mt-1">Shipments over ₹50,000 require an E-Way Bill</p>
             </div>
           ) : (
@@ -414,7 +440,7 @@ export default function WaybillDetailsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Route Details */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
             Route Details
           </h3>
           <div className="space-y-4">
@@ -429,8 +455,8 @@ export default function WaybillDetailsPage() {
             </div>
             <div className="w-0.5 h-6 bg-slate-700 ml-4"></div>
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-orange-400">B</span>
+              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-cyan-400">B</span>
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-0.5 uppercase tracking-wider">To</p>
@@ -442,7 +468,7 @@ export default function WaybillDetailsPage() {
 
         {/* Consignor */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
             Consignor (Sender)
           </h3>
           <div className="space-y-3 text-sm">
@@ -467,7 +493,7 @@ export default function WaybillDetailsPage() {
 
         {/* Consignee */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
             Consignee
           </h3>
           <div className="space-y-3 text-sm">
@@ -493,7 +519,7 @@ export default function WaybillDetailsPage() {
 
       {/* Assigned Staff / Drivers */}
       <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 mt-6">
-        <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+        <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -503,8 +529,8 @@ export default function WaybillDetailsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {waybill.assigned_staff.map((c) => (
               <div key={c.id} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl px-4 py-3">
-                <div className="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                  <span className="text-orange-400 text-sm font-bold">{c.name?.charAt(0)?.toUpperCase()}</span>
+                <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                  <span className="text-cyan-400 text-sm font-bold">{c.name?.charAt(0)?.toUpperCase()}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white text-sm font-medium truncate">{c.name}</p>
@@ -513,7 +539,7 @@ export default function WaybillDetailsPage() {
                     {c.role && (
                       <>
                         <span className="text-slate-700 text-xs">•</span>
-                        <span className="text-orange-400/90 font-medium capitalize text-[10px] bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded">
+                        <span className="text-cyan-400/90 font-medium capitalize text-[10px] bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded">
                           {c.role === 'other' ? c.role_other_specify || 'Other' : c.role.replace('_', ' ')}
                         </span>
                       </>
@@ -532,7 +558,7 @@ export default function WaybillDetailsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {/* Timeline */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-orange-400 text-sm font-semibold mb-6 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-cyan-400 text-sm font-semibold mb-6 uppercase tracking-wider flex items-center gap-2">
             Status History
           </h3>
           <div className="space-y-6 relative before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800">
@@ -545,7 +571,7 @@ export default function WaybillDetailsPage() {
               return (
                 <div key={status} className="relative pl-10">
                   <div className={`absolute left-1.5 top-1.5 w-4 h-4 rounded-full border-2 transform -translate-x-1/2 flex items-center justify-center transition-all ${
-                    isCurrent ? 'bg-orange-500 border-orange-400 ring-4 ring-orange-500/20' :
+                    isCurrent ? 'bg-cyan-500 border-cyan-400 ring-4 ring-cyan-500/20' :
                     isCompleted ? 'bg-emerald-500 border-emerald-400' :
                     'bg-slate-950 border-slate-800'
                   }`}>
@@ -557,7 +583,7 @@ export default function WaybillDetailsPage() {
                   </div>
                   <div>
                     <p className={`text-sm font-semibold uppercase tracking-wider ${
-                      isCurrent ? 'text-orange-400' : isCompleted ? 'text-white' : 'text-slate-500'
+                      isCurrent ? 'text-cyan-400' : isCompleted ? 'text-white' : 'text-slate-500'
                     }`}>
                       {status.replace(/_/g, ' ')}
                     </p>
@@ -581,7 +607,7 @@ export default function WaybillDetailsPage() {
         {/* Update Status form */}
         {(user?.role === 'admin' || user?.role === 'staff') ? (
           <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-            <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider">
+            <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider">
               Update Consignment Status
             </h3>
             <form onSubmit={handleStatusSubmit} className="space-y-4">
@@ -597,7 +623,7 @@ export default function WaybillDetailsPage() {
                       setStatusPaymentStatus('paid');
                     }
                   }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="booked">Booked</option>
                   <option value="loaded">Loaded</option>
@@ -616,7 +642,7 @@ export default function WaybillDetailsPage() {
                   value={statusLocation}
                   onChange={(e) => setStatusLocation(e.target.value)}
                   placeholder="e.g. Warehouse 3 / Delhi Hub"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 />
               </div>
 
@@ -627,7 +653,7 @@ export default function WaybillDetailsPage() {
                   onChange={(e) => setStatusRemarks(e.target.value)}
                   placeholder="Additional details / comments..."
                   rows={2}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none"
                 />
               </div>
 
@@ -637,7 +663,7 @@ export default function WaybillDetailsPage() {
                   <select
                     value={statusPaymentStatus}
                     onChange={(e) => setStatusPaymentStatus(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   >
                     <option value="pending">Pending</option>
                     <option value="paid">Paid</option>
@@ -650,7 +676,7 @@ export default function WaybillDetailsPage() {
                     <select
                       value={statusPaymentMethod}
                       onChange={(e) => setStatusPaymentMethod(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     >
                       <option value="cash">Cash</option>
                       <option value="upi">UPI / Online</option>
@@ -663,7 +689,7 @@ export default function WaybillDetailsPage() {
               <button
                 type="submit"
                 disabled={statusUpdating}
-                className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-all shadow-lg shadow-orange-500/20"
+                className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-semibold transition-all shadow-lg shadow-cyan-500/20"
               >
                 {statusUpdating ? 'Updating...' : 'Update Status'}
               </button>
@@ -681,7 +707,7 @@ export default function WaybillDetailsPage() {
 
       {/* Modification History */}
       <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 mt-6">
-        <h3 className="text-orange-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+        <h3 className="text-cyan-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -710,7 +736,7 @@ export default function WaybillDetailsPage() {
                   value={ewayNumber}
                   onChange={(e) => setEwayNumber(e.target.value)}
                   placeholder="e.g. 123456789012"
-                  className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 />
               </div>
               <div>
@@ -719,7 +745,7 @@ export default function WaybillDetailsPage() {
                   type="date"
                   value={ewayValidUntil}
                   onChange={(e) => setEwayValidUntil(e.target.value)}
-                  className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 />
               </div>
               <div className="pt-4 flex justify-end gap-3">
@@ -728,7 +754,7 @@ export default function WaybillDetailsPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={updating}
-                  className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors">
+                  className="bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors">
                   {updating ? 'Saving...' : 'Save E-Way Bill'}
                 </button>
               </div>
@@ -754,7 +780,7 @@ export default function WaybillDetailsPage() {
                 <select
                   value={paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
@@ -769,7 +795,7 @@ export default function WaybillDetailsPage() {
                     type="date"
                     value={paymentDueDate}
                     onChange={(e) => setPaymentDueDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 [color-scheme:dark]"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 [color-scheme:dark]"
                   />
                 </div>
               )}
@@ -782,7 +808,7 @@ export default function WaybillDetailsPage() {
                       type="date"
                       value={paymentPaidDate}
                       onChange={(e) => setPaymentPaidDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 [color-scheme:dark]"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 [color-scheme:dark]"
                     />
                   </div>
                   <div>
@@ -790,7 +816,7 @@ export default function WaybillDetailsPage() {
                     <select
                       value={paymentMethodInput}
                       onChange={(e) => setPaymentMethodInput(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                     >
                       <option value="cash">Cash</option>
                       <option value="upi">UPI / Online</option>
@@ -806,7 +832,7 @@ export default function WaybillDetailsPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={paymentUpdating}
-                  className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors">
+                  className="bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors">
                   {paymentUpdating ? 'Saving...' : 'Save Payment'}
                 </button>
               </div>

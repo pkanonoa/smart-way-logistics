@@ -30,7 +30,7 @@ export default function PublicTrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6">
         <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-slate-400 text-sm">Searching for consignment tracking details...</p>
       </div>
@@ -39,7 +39,7 @@ export default function PublicTrackingPage() {
 
   if (error || !waybill) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 text-2xl font-bold">!</div>
         <h2 className="text-xl font-bold text-white mb-2">Tracking Failed</h2>
         <p className="text-slate-400 text-sm max-w-md mb-6">{error || 'Consignment not found'}</p>
@@ -52,7 +52,7 @@ export default function PublicTrackingPage() {
   const currentStatusIndex = STATUS_FLOW.indexOf(waybill.status);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-12 px-6">
+    <div className="min-h-screen bg-transparent py-12 px-6">
       <div className="fixed top-0 left-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-2xl mx-auto relative z-10">

@@ -34,7 +34,7 @@ const INITIAL_FORM = {
   credit_collection: '',
 };
 
-export default function DailyCollectionsPage() {
+export default function DailyCollectionsPage({ embedded = false }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('list');
   const [collections, setCollections] = useState([]);
@@ -324,16 +324,17 @@ export default function DailyCollectionsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
       <div className="print:hidden">
       {/* Background glow */}
-      <div className="fixed top-0 left-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+      {!embedded && <div className="fixed top-0 left-0 w-[500px] h-[400px] bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Daily Collection Register</h1>
-          <p className="text-sm text-slate-400 mt-1">Record and review trip-level collections, expenses, and vehicle logs</p>
-        </div>
-        {user?.role !== 'viewer' && (
-          <button 
-            onClick={openCreateModal}
+      {!embedded && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Daily Collection Register</h1>
+            <p className="text-sm text-slate-400 mt-1">Record and review trip-level collections, expenses, and vehicle logs</p>
+          </div>
+          {user?.role !== 'viewer' && (
+            <button 
+              onClick={openCreateModal}
             className="bg-orange-500 hover:bg-orange-400 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-orange-500/20"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,8 +342,9 @@ export default function DailyCollectionsPage() {
             </svg>
             Record Collection Sheet
           </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-4 border-b border-slate-800 mb-6">
         <button

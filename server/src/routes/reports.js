@@ -114,6 +114,118 @@ async function streamExcelResponse(res, filename, columns, rows) {
     return res.status(500).json({ error: 'Failed to generate Excel' });
   }
 }
+// ─── 0. OVERVIEW DASHBOARD SUMMARY ───────────────────────────────────────────────
+router.get('/summary', async (req, res) => {
+  try {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    
+    // 1. Waybills this month vs last month
+    const waybillsCurrent = await prisma.waybill.count({ where: { booking_date: { gte: currentMonthStart } } });
+    const waybillsLast = await prisma.waybill.count({ where: { booking_date: { gte: lastMonthStart, lte: lastMonthEnd } } });
+    
+    // 2. Collections & Expenses this month vs last month
+    const collectionsCurrent = await prisma.dailyCollection.aggregate({
+      where: { date: { gte: currentMonthStart } },
+      _sum: { total_collection: true, total_expense: true }
+    });
+    const collectionsLast = await prisma.dailyCollection.aggregate({
+      where: { date: { gte: lastMonthStart, lte: lastMonthEnd } },
+      _sum: { total_collection: true, total_expense: true }
+    });
+    
+    const collectedCurrent = Number(collectionsCurrent._sum.total_collection || 0);
+    const spentCurrent = Number(collectionsCurrent._sum.total_expense || 0);
+    const collectedLast = Number(collectionsLast._sum.total_collection || 0);
+    const spentLast = Number(collectionsLast._sum.total_expense || 0);
+    
+    const netCurrent = collectedCurrent - spentCurrent;
+    const netLast = collectedLast - spentLast;
+    
+    // 3. Pending Deliveries
+    const pendingCurrent = await prisma.waybill.count({ where: { status: { not: 'delivered' } } });
+    
+    // 4. Trends (Last 6 months)
+    const trends = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      const m = await prisma.dailyCollection.aggregate({
+        where: { date: { gte: start, lte: end } },
+        _sum: { total_collection: true, total_expense: true }
+      });
+      trends.push({
+        name: start.toLocaleString('default', { month: 'short' }),
+        collected: Number(m._sum.total_collection || 0),
+        spent: Number(m._sum.total_expense || 0)
+      });
+    }
+    
+    // 5. Recent Waybills
+    const recentWaybills = await prisma.waybill.findMany({
+      take: 20,
+      orderBy: { booking_date: 'desc' },
+      include: { payment: true, assigned_staff: true }
+    });
+    
+    // 6. Right Sidebar Stats
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay()); // Sunday
+    weekStart.setHours(0,0,0,0);
+    const deliveriesWeek = await prisma.waybill.count({
+      where: { status: 'delivered', booking_date: { gte: weekStart } }
+    });
+    
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    const activeTrips = await prisma.dailyCollection.count({
+      where: { date: { gte: todayStart } }
+    });
+    
+    const topRoutes = await prisma.waybill.groupBy({
+      by: ['from_location', 'to_location'],
+      _count: { waybill_number: true },
+      where: { booking_date: { gte: currentMonthStart } },
+      orderBy: { _count: { waybill_number: 'desc' } },
+      take: 5
+    });
+    
+    res.json({
+      stats: {
+        waybills: { value: waybillsCurrent, delta: waybillsLast > 0 ? ((waybillsCurrent - waybillsLast) / waybillsLast) * 100 : 100 },
+        collected: { value: collectedCurrent, delta: collectedLast > 0 ? ((collectedCurrent - collectedLast) / collectedLast) * 100 : 100 },
+        spent: { value: spentCurrent, delta: spentLast > 0 ? ((spentCurrent - spentLast) / spentLast) * 100 : 100 },
+        net: { value: netCurrent, delta: netLast !== 0 ? ((netCurrent - netLast) / Math.abs(netLast)) * 100 : 100 },
+        pending: { value: pendingCurrent, delta: null }
+      },
+      trends,
+      recentWaybills: recentWaybills.map(w => ({
+        waybill_number: w.waybill_number,
+        date: formatDate(w.booking_date),
+        consignee: w.consignee_name,
+        route: `${w.from_location} → ${w.to_location}`,
+        status: w.status,
+        payment_status: w.payment?.status || 'pending',
+        freight: Number(w.grand_total),
+        staff: w.assigned_staff.map(s => s.name).join(', ') || 'Unassigned'
+      })),
+      sidebar: {
+        deliveriesCompleted: deliveriesWeek,
+        onTimeRate: 98,
+        activeTrips,
+        topRoutes: topRoutes.map(r => ({
+          route: `${r.from_location} → ${r.to_location}`,
+          count: r._count.waybill_number
+        }))
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate report summary' });
+  }
+});
 
 // ─── 1. BOOKINGS REPORT ────────────────────────────────────────────────────────
 router.get('/bookings', async (req, res) => {

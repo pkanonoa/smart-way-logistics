@@ -15,6 +15,27 @@
   --color-brand-900: #7c2d12;
   --color-brand-950: #431407;
 
+  /* Charcoal overrides for slate */
+  --color-slate-950: #121212;
+  --color-slate-900: #1a1a1a;
+  --color-slate-800: #2a2a2a;
+  --color-slate-700: #333333;
+  --color-slate-600: #444444;
+  --color-slate-500: #666666;
+  --color-slate-400: #8a8a8a;
+  --color-slate-300: #a3a3a3;
+
+  /* Vibrant Cyan overrides (replacing orange) */
+  --color-orange-300: #67e8f9;
+  --color-orange-400: #22d3ee;
+  --color-orange-500: #06b6d4;
+  --color-orange-600: #0891b2;
+
+  /* Border radius overrides */
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
@@ -32,6 +53,12 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background-color: #0f172a;
+  background-image: 
+    linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)),
+    url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: #f1f5f9;
 }
 
