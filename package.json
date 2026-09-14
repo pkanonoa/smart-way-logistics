@@ -9,7 +9,10 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "install:all": "npm install && npm install --workspace=client && npm install --workspace=server",
-    "postinstall": "npm run db:generate --workspace=server"
+    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "prisma": "^5.14.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
