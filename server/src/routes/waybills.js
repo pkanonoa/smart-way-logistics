@@ -76,7 +76,7 @@ router.post('/', requireRole('admin', 'staff'), [
     sender_company_id, receiver_company_id,
     no_of_packages, package_type, weight, volume, description,
     freight, handling_charges, sgst, cgst, igst, payment_mode,
-    eway_bill_number, eway_bill_valid_until } = req.body;
+    invoice_number, eway_bill_number, eway_bill_valid_until } = req.body;
 
   const grand_total = calcTotal(freight, handling_charges, sgst, cgst, igst);
 
@@ -130,6 +130,7 @@ router.post('/', requireRole('admin', 'staff'), [
           freight: parseFloat(freight), handling_charges: parseFloat(handling_charges || 0),
           sgst: parseFloat(sgst || 0), cgst: parseFloat(cgst || 0), igst: parseFloat(igst || 0),
           grand_total, payment_mode, created_by: req.user.id,
+          invoice_number: invoice_number?.trim() || null,
           eway_bill_number: eway_bill_number?.trim() || null,
           eway_bill_valid_until: eway_bill_valid_until ? new Date(eway_bill_valid_until) : null,
           payment: {
@@ -220,7 +221,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
 
     const { from_location, to_location, consignee_name, consignee_mobile, consignee_address,
       consignee_gst, no_of_packages, package_type, weight, volume, description, payment_mode, status,
-      eway_bill_number, eway_bill_valid_until,
+      invoice_number, eway_bill_number, eway_bill_valid_until,
       payment_status, payment_due_date, payment_paid_date, payment_method,
       sender_company_id, receiver_company_id,
       consignor_name, consignor_contact, consignor_address, consignor_gst, assigned_staff_ids } = req.body;
@@ -248,6 +249,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
         ...(description !== undefined && { description: description || null }),
         freight, handling_charges: handling, sgst, cgst, igst, grand_total,
         ...(payment_mode && { payment_mode }), ...(status && { status }),
+        ...(invoice_number !== undefined && { invoice_number: invoice_number?.trim() || null }),
         ...(eway_bill_number !== undefined && { eway_bill_number: eway_bill_number || null }),
         ...(eway_bill_valid_until !== undefined && { eway_bill_valid_until: eway_bill_valid_until ? new Date(eway_bill_valid_until) : null }),
         ...(existing.payment && {

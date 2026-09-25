@@ -260,6 +260,7 @@ model Waybill {
   payment_mode PaymentMode
   status       WaybillStatus @default(booked)
 
+  invoice_number        String?
   eway_bill_number      String?
   eway_bill_valid_until DateTime? @db.Date
 

@@ -18,9 +18,14 @@ function generateWaybillHtml(waybill, isDuplicate = false) {
   const checkBox = (label, checked) =>
     `<span class="pay-option ${checked ? 'checked' : ''}">${checked ? '☑' : '☐'} ${label}</span>`;
 
-  const ewayRow = waybill.eway_bill_number
+  const invoiceInfo = waybill.invoice_number
+    ? `<div><span class="eway-label">INVOICE NO.</span> <span class="eway-val">${waybill.invoice_number}</span></div>`
+    : '';
+
+  const ewayRow = (waybill.eway_bill_number || waybill.invoice_number)
     ? `<div class="eway-box">
-        <div><span class="eway-label">E-WAY BILL NO.</span> <span class="eway-val">${waybill.eway_bill_number}</span></div>
+        ${invoiceInfo}
+        ${waybill.eway_bill_number ? `<div><span class="eway-label">E-WAY BILL NO.</span> <span class="eway-val">${waybill.eway_bill_number}</span></div>` : ''}
         ${waybill.eway_bill_valid_until ? `<div><span class="eway-label">VALID UNTIL</span> <span class="eway-val">${fmtDate(waybill.eway_bill_valid_until)}</span></div>` : ''}
        </div>`
     : `<div class="eway-box eway-missing">No E-Way Bill${Number(waybill.grand_total) >= 50000 ? ' — <strong>REQUIRED</strong>' : ''}</div>`;

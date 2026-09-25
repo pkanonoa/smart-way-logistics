@@ -93,6 +93,7 @@ export default function EditBookingPage() {
           cgst: String(w.cgst),
           igst: String(w.igst),
           payment_mode: w.payment_mode,
+          invoice_number: w.invoice_number || '',
           eway_bill_number: w.eway_bill_number || '',
           eway_bill_valid_until: w.eway_bill_valid_until ? w.eway_bill_valid_until.slice(0, 10) : '',
         });
@@ -402,10 +403,10 @@ export default function EditBookingPage() {
           </div>
         </Section>
 
-        {/* ── Section 5.5: E-Way Bill ───────────────────────────── */}
+        {/* ── Section 5.5: Invoice & E-Way Bill ───────────────────────────── */}
         <Section title={
           <div className="flex items-center gap-3">
-            <span>E-Way Bill</span>
+            <span>Invoice & E-Way Bill</span>
             {grandTotal >= 50000 ? (
               <span className="bg-orange-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm">
                 Required — Grand Total is ₹50,000+
@@ -419,7 +420,11 @@ export default function EditBookingPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         }>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Field label="Invoice Number">
+              <input name="invoice_number" value={form.invoice_number} onChange={handleChange}
+                placeholder="e.g. INV-2026-001 (Optional)" className={inputCls()} />
+            </Field>
             <Field label="E-Way Bill Number" required={grandTotal >= 50000}>
               <input name="eway_bill_number" value={form.eway_bill_number} onChange={handleChange}
                 placeholder={grandTotal >= 50000 ? 'Required by GST rules' : 'Optional'}
@@ -431,7 +436,7 @@ export default function EditBookingPage() {
             </Field>
           </div>
           <p className="text-xs text-slate-500 mt-3">
-            Note: Generate the e-way bill on the government portal and paste the number here.
+            Note: You can add or edit the invoice number and e-way bill details anytime.
           </p>
         </Section>
 
