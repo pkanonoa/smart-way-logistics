@@ -78,7 +78,11 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 Smart Way Logistics API running on http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Smart Way Logistics API running on http://localhost:${PORT}`);
+    console.log(`   Health: http://localhost:${PORT}/health`);
+  });
+}
+
+module.exports = app;
