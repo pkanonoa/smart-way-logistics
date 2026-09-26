@@ -1,3 +1,4 @@
+// Vercel Serverless Entry Point - Smart Way Logistics API (v1.0.1)
 const path = require('path');
 const dotenv = require('dotenv');
 
