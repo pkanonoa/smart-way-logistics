@@ -299,7 +299,7 @@ export default function WaybillDetailsPage() {
               setPdfLoading(true);
               const win = window.open('about:blank', '_blank');
               try {
-                const blob = await fetchWaybillPdfBlob(id, false);
+                const { blob } = await fetchWaybillPdfBlob(id, false);
                 const url = window.URL.createObjectURL(blob);
                 if (win) {
                   win.location.href = url;
@@ -307,7 +307,7 @@ export default function WaybillDetailsPage() {
               } catch (err) {
                 if (win) win.close();
                 console.error('Print error:', err);
-                showAlert('Failed to prepare PDF for print.');
+                showAlert('Failed to prepare document for print.');
               } finally {
                 setPdfLoading(false);
               }
