@@ -10,6 +10,7 @@ import CreateSingleWeekModal from '../components/salaries/CreateSingleWeekModal'
 import SettlePaymentModal from '../components/payments/SettlePaymentModal';
 import { useAuth } from '../context/AuthContext';
 import ActivityHistory from '../components/common/ActivityHistory';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 export default function StaffDetailsPage() {
   const { user } = useAuth();
@@ -38,6 +39,13 @@ export default function StaffDetailsPage() {
   const [editingAdjustment, setEditingAdjustment] = useState(null);
   
   const [expandedWeeks, setExpandedWeeks] = useState({});
+
+  // Confirm and Alert modal state
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Error', message: '', type: 'danger' });
+  const showAlert = (message, title = 'Error', type = 'danger') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
 
   async function loadData() {
     setLoading(true);
@@ -78,44 +86,68 @@ export default function StaffDetailsPage() {
     }
   }, [id, activeTab]);
 
-  async function handleDeleteAdjustment(adjId) {
-    if (!confirm('Are you sure you want to delete this adjustment?')) return;
-    try {
-      await deleteSalaryAdjustment(adjId);
-      loadData();
-    } catch (err) {
-      alert('Failed to delete adjustment');
-    }
+  function handleDeleteAdjustment(adjId) {
+    setConfirmConfig({
+      title: 'Delete Adjustment',
+      message: 'Are you sure you want to delete this adjustment?',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await deleteSalaryAdjustment(adjId);
+          loadData();
+        } catch (err) {
+          showAlert('Failed to delete adjustment');
+        }
+      }
+    });
   }
 
-  async function handleDeleteWeek(weekId) {
-    if (!confirm('Are you sure you want to delete this entire salary week?')) return;
-    try {
-      await deleteSalaryWeek(weekId);
-      loadData();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete salary week');
-    }
+  function handleDeleteWeek(weekId) {
+    setConfirmConfig({
+      title: 'Delete Salary Week',
+      message: 'Are you sure you want to delete this entire salary week?',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await deleteSalaryWeek(weekId);
+          loadData();
+        } catch (err) {
+          showAlert(err.response?.data?.error || 'Failed to delete salary week');
+        }
+      }
+    });
   }
 
-  async function handleDeletePayment(payId) {
-    if (!confirm('Are you sure you want to delete this payment?')) return;
-    try {
-      await deleteSalaryPayment(payId);
-      loadData();
-    } catch (err) {
-      alert('Failed to delete payment');
-    }
+  function handleDeletePayment(payId) {
+    setConfirmConfig({
+      title: 'Delete Salary Payment',
+      message: 'Are you sure you want to delete this payment?',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await deleteSalaryPayment(payId);
+          loadData();
+        } catch (err) {
+          showAlert('Failed to delete payment');
+        }
+      }
+    });
   }
 
-  async function handleDeleteAdvance(advId) {
-    if (!confirm('Are you sure you want to delete this advance?')) return;
-    try {
-      await deleteStaffAdvance(advId);
-      loadData();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete advance');
-    }
+  function handleDeleteAdvance(advId) {
+    setConfirmConfig({
+      title: 'Delete Staff Advance',
+      message: 'Are you sure you want to delete this advance?',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await deleteStaffAdvance(advId);
+          loadData();
+        } catch (err) {
+          showAlert(err.response?.data?.error || 'Failed to delete advance');
+        }
+      }
+    });
   }
 
   function toggleWeek(weekId) {
@@ -637,6 +669,27 @@ export default function StaffDetailsPage() {
         payment={selectedPayment}
         onClose={() => setSelectedPayment(null)}
         onComplete={loadPayments}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        title={confirmConfig?.title || 'Confirmation'}
+        message={confirmConfig?.message || ''}
+        confirmText="Confirm Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={confirmConfig?.onConfirm}
+        onCancel={() => setConfirmConfig(null)}
+      />
+
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        isAlert={true}
+        confirmText="OK"
+        onConfirm={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
       />
 
     </div>

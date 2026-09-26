@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getTrips, deleteTrip } from '../api/tripsApi';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../utils/rbac';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const STATUS_STYLES = {
   draft:       'bg-slate-800 text-slate-300 border-slate-700',
@@ -30,6 +31,7 @@ export default function TripsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDistrict, setFilterDistrict] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteTripId, setConfirmDeleteTripId] = useState(null);
 
   async function loadTrips() {
     setLoading(true);
@@ -52,8 +54,14 @@ export default function TripsPage() {
     return () => clearTimeout(t);
   }, [filterStatus, filterDistrict]);
 
-  async function handleDelete(id) {
-    if (!window.confirm('Delete this trip and all its stops?')) return;
+  function handleDelete(id) {
+    setConfirmDeleteTripId(id);
+  }
+
+  async function executeDeleteTrip() {
+    if (!confirmDeleteTripId) return;
+    const id = confirmDeleteTripId;
+    setConfirmDeleteTripId(null);
     setDeletingId(id);
     try {
       await deleteTrip(id);
@@ -192,6 +200,17 @@ export default function TripsPage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDeleteTripId}
+        title="Delete Trip"
+        message="Are you sure you want to delete this trip and all its associated stops?"
+        confirmText="Delete Trip"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={executeDeleteTrip}
+        onCancel={() => setConfirmDeleteTripId(null)}
+      />
     </div>
   );
 }

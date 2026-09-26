@@ -3,6 +3,7 @@ import { getReportsSummary, downloadReportBlob } from '../api/reportsApi';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getCompanies } from '../api/companiesApi';
 import { useNavigate } from 'react-router-dom';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const INR = (amount) => Number(amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
@@ -20,6 +21,11 @@ export default function ReportsPage() {
   const [companySearch, setCompanySearch] = useState('');
   const [companies, setCompanies] = useState([]);
   const navigate = useNavigate();
+
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Error', message: '', type: 'danger' });
+  const showAlert = (message, title = 'Error', type = 'danger') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -64,7 +70,7 @@ export default function ReportsPage() {
       link.parentNode.removeChild(link);
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Failed to export report data');
+      showAlert('Failed to export report data');
     } finally {
       setExporting(false);
     }
@@ -81,7 +87,7 @@ export default function ReportsPage() {
     } catch (err) {
       if (win) win.close();
       console.error('PDF print failed', err);
-      alert('Failed to generate PDF');
+      showAlert('Failed to generate PDF');
     }
   };
 
@@ -412,6 +418,16 @@ export default function ReportsPage() {
         </>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        isAlert={true}
+        confirmText="OK"
+        onConfirm={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

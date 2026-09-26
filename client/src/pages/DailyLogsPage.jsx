@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getDailyLogs, recordDailyEarning } from '../api/dailyLogsApi';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 function INR(amount) {
   return Number(amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 });
@@ -14,6 +15,11 @@ export default function DailyLogsPage() {
   const [error, setError] = useState('');
   const [earningInputs, setEarningInputs] = useState({});
   const [savingId, setSavingId] = useState(null);
+
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Error', message: '', type: 'danger' });
+  const showAlert = (message, title = 'Error', type = 'danger') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
 
   async function loadData(selectedDate) {
     setLoading(true);
@@ -55,7 +61,7 @@ export default function DailyLogsPage() {
         log.staff_id === staff_id ? { ...log, earnings_total: amount } : log
       ));
     } catch (err) {
-      alert('Failed to save daily earning');
+      showAlert('Failed to save daily earning');
     } finally {
       setSavingId(null);
     }
@@ -195,6 +201,16 @@ export default function DailyLogsPage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        isAlert={true}
+        confirmText="OK"
+        onConfirm={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

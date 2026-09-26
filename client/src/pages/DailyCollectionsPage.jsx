@@ -11,6 +11,7 @@ import VehicleSelect from '../components/vehicles/VehicleSelect';
 import { getWaybills } from '../api/waybillApi';
 import { useAuth } from '../context/AuthContext';
 import ActivityHistory from '../components/common/ActivityHistory';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const INR = (n) => Number(n || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
@@ -39,6 +40,13 @@ export default function DailyCollectionsPage({ embedded = false }) {
   const [activeTab, setActiveTab] = useState('list');
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal / Confirm / Alert state
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Error', message: '', type: 'danger' });
+  const showAlert = (message, title = 'Notification', type = 'danger') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
   
   // Filters
   const [startDate, setStartDate] = useState('');
@@ -298,19 +306,25 @@ export default function DailyCollectionsPage({ embedded = false }) {
     } catch (err) {
       console.error('Save error details:', err);
       const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
-      alert(`Failed to save daily collection record: ${errMsg}`);
+      showAlert(`Failed to save daily collection record: ${errMsg}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
+  const handleDelete = (id) => {
+    setConfirmDeleteId(id);
+  };
+
+  const executeDeleteCollection = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       await deleteDailyCollection(id);
       loadCollections();
     } catch (err) {
-      alert('Failed to delete daily collection record.');
+      showAlert('Failed to delete daily collection record.');
     }
   };
 
@@ -1151,6 +1165,27 @@ export default function DailyCollectionsPage({ embedded = false }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        title="Delete Daily Collection Record"
+        message="Are you sure you want to delete this collection record?\n\nThis action cannot be undone."
+        confirmText="Delete Record"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={executeDeleteCollection}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        isAlert={true}
+        confirmText="OK"
+        onConfirm={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getUsers, createUser, deleteUser } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 export default function UserManagementPage() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function UserManagementPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -33,12 +35,18 @@ export default function UserManagementPage() {
     }
   }
 
-  async function handleDeleteUser(id, name) {
+  function handleDeleteUser(id, name) {
     if (id === user?.id) {
       setError('You cannot delete your own account.');
       return;
     }
-    if (!window.confirm(`Are you sure you want to delete user "${name}"?`)) return;
+    setDeleteTarget({ id, name });
+  }
+
+  async function confirmDeleteUser() {
+    if (!deleteTarget) return;
+    const { id, name } = deleteTarget;
+    setDeleteTarget(null);
     try {
       await deleteUser(id);
       setSuccess(`User "${name}" deleted successfully.`);
@@ -269,6 +277,17 @@ export default function UserManagementPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete User Account"
+        message={`Are you sure you want to delete user "${deleteTarget?.name}"?\n\nThey will immediately lose access to the logistics portal.`}
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

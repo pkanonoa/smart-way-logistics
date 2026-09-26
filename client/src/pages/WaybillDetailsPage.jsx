@@ -51,6 +51,12 @@ export default function WaybillDetailsPage() {
   const [paymentMethodInput, setPaymentMethodInput] = useState('cash');
   const [paymentUpdating, setPaymentUpdating] = useState(false);
 
+  // In-app Alert modal state
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Error', message: '', type: 'danger' });
+  const showAlert = (message, title = 'Notification', type = 'danger') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
+
   useEffect(() => {
     fetchWaybill();
   }, [id]);
@@ -88,7 +94,7 @@ export default function WaybillDetailsPage() {
       setWaybill(updated);
       setShowEWayModal(false);
     } catch (err) {
-      alert('Failed to update Invoice / E-Way Bill');
+      showAlert('Failed to update Invoice / E-Way Bill');
     } finally {
       setUpdating(false);
     }
@@ -116,7 +122,7 @@ export default function WaybillDetailsPage() {
       setWaybill(updated);
       setShowPaymentModal(false);
     } catch (err) {
-      alert('Failed to update payment status');
+      showAlert('Failed to update payment status');
     } finally {
       setPaymentUpdating(false);
     }
@@ -169,7 +175,7 @@ export default function WaybillDetailsPage() {
       const trackingData = await getWaybillTracking(id);
       setTracking(trackingData || []);
     } catch (err) {
-      alert('Failed to update status');
+      showAlert('Failed to update status');
     } finally {
       setStatusUpdating(false);
     }
@@ -184,7 +190,7 @@ export default function WaybillDetailsPage() {
       const trackingData = await getWaybillTracking(id);
       setTracking(trackingData || []);
     } catch (err) {
-      alert('Failed to update status');
+      showAlert('Failed to update status');
     }
   };
 
@@ -193,7 +199,7 @@ export default function WaybillDetailsPage() {
       await deleteWaybill(id);
       navigate('/waybills');
     } catch (err) {
-      alert(err?.response?.data?.error || err?.message || 'Failed to delete waybill');
+      showAlert(err?.response?.data?.error || err?.message || 'Failed to delete waybill');
     }
   };
 
@@ -206,7 +212,7 @@ export default function WaybillDetailsPage() {
     try {
       await downloadWaybillPdf(id, isDuplicate);
     } catch (err) {
-      alert('Failed to generate PDF. Please try again.');
+      showAlert('Failed to generate PDF. Please try again.');
     } finally {
       setPdfLoading(false);
     }
@@ -301,7 +307,7 @@ export default function WaybillDetailsPage() {
               } catch (err) {
                 if (win) win.close();
                 console.error('Print error:', err);
-                alert('Failed to prepare PDF for print.');
+                showAlert('Failed to prepare PDF for print.');
               } finally {
                 setPdfLoading(false);
               }
@@ -895,6 +901,16 @@ export default function WaybillDetailsPage() {
           executeDelete();
         }}
         onCancel={() => setShowDeleteModal(false)}
+      />
+
+      <ConfirmModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        isAlert={true}
+        confirmText="OK"
+        onConfirm={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
