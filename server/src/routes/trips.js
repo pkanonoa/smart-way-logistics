@@ -52,6 +52,24 @@ async function resequenceStops(tx, tripId) {
   }
 }
 
+// ─── GET /api/trips/badge-counts — sidebar badge data ─────────────────────────
+// Returns: { unassigned: N, draftTrips: N }
+// unassigned = waybills not yet on any trip (stop_item === null)
+// draftTrips  = trips in draft or open status
+
+router.get('/badge-counts', requireRole('admin', 'staff'), async (req, res) => {
+  try {
+    const [unassigned, draftTrips] = await Promise.all([
+      prisma.waybill.count({ where: { stop_item: null, status: { not: 'delivered' } } }),
+      prisma.trip.count({ where: { status: { in: ['draft', 'open'] } } }),
+    ]);
+    return res.json({ unassigned, draftTrips });
+  } catch (err) {
+    console.error('[trips:badge-counts]', err);
+    return res.status(500).json({ error: 'Failed to fetch badge counts' });
+  }
+});
+
 // ─── Legacy endpoints (keep for backward compat) ──────────────────────────────
 
 // GET /api/trips/unassigned-groups  (old AssignTripsPage — kept intact)

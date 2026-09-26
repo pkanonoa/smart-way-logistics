@@ -73,3 +73,13 @@ body {
   background: #475569;
   border-radius: 3px;
 }
+
+/* ── Utility: Hide scrollbar but allow scroll ─────────────────────────────── */
+.hide-scrollbar {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE/Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;              /* Chrome/Safari/Opera */
+}
+

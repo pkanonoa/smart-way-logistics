@@ -213,6 +213,19 @@ export default function WaybillsPage({ embedded = false }) {
                             </span>
                           </div>
                         )}
+                        {wb.stop_item?.stop && (() => {
+                          const s = wb.stop_item.stop;
+                          return (
+                            <div className="mt-1">
+                              <Link
+                                to={`/trips/${s.trip?.id}`}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded hover:bg-emerald-500/20 transition-colors"
+                              >
+                                On trip · stop {s.sequence}
+                              </Link>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-slate-300">
                         {formatDate(wb.booking_date)}

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getUsers, createUser, deleteUser } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
 
 export default function UserManagementPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState(searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
@@ -201,8 +204,15 @@ export default function UserManagementPage() {
 
         {/* Existing Users List */}
         <div className="lg:col-span-2 bg-slate-900/60 border border-slate-700/50 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80">
-            <h2 className="text-white font-semibold">Active Login Accounts</h2>
+          <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80 flex items-center gap-3">
+            <h2 className="text-white font-semibold flex-1">Active Login Accounts</h2>
+            <input
+              type="text"
+              placeholder="Filter by name or phone…"
+              value={userSearch}
+              onChange={e => setUserSearch(e.target.value)}
+              className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 w-48"
+            />
           </div>
           
           <div className="overflow-x-auto">
@@ -217,7 +227,7 @@ export default function UserManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40">
-                {users.map(u => (
+                {users.filter(u => !userSearch || u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.phone.includes(userSearch)).map(u => (
                   <tr key={u.id} className="hover:bg-slate-800/10">
                     <td className="px-6 py-4 text-white font-medium">{u.name}</td>
                     <td className="px-6 py-4 text-slate-300 font-mono">{u.phone}</td>

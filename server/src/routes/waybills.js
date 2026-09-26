@@ -435,11 +435,16 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Waybill not found' });
 
     await prisma.$transaction(async (tx) => {
-      // Explicitly delete the related payment first to avoid FK constraint errors
-      if (existing.payment) {
-        await tx.payment.delete({ where: { waybill_id: req.params.id } });
-      }
-      // Then delete the waybill (many-to-many join table rows for consignors are handled automatically)
+      // 1. Delete associated StopItem if assigned to a trip
+      await tx.stopItem.deleteMany({ where: { waybill_id: req.params.id } });
+
+      // 2. Delete associated ParcelTracking history
+      await tx.parcelTracking.deleteMany({ where: { waybill_id: req.params.id } });
+
+      // 3. Delete associated Payment record
+      await tx.payment.deleteMany({ where: { waybill_id: req.params.id } });
+
+      // 4. Delete the waybill
       await tx.waybill.delete({ where: { id: req.params.id } });
     });
 

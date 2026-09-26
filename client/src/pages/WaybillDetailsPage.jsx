@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getWaybill, updateWaybill, deleteWaybill, downloadWaybillPdf, fetchWaybillPdfBlob, updateWaybillStatus, getWaybillTracking } from '../api/waybillApi';
 import { useAuth } from '../context/AuthContext';
 import ActivityHistory from '../components/common/ActivityHistory';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 function Badge({ status }) {
   const styles = {
@@ -27,6 +28,7 @@ export default function WaybillDetailsPage() {
   const [error, setError] = useState('');
 
   const [showEWayModal, setShowEWayModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [ewayNumber, setEwayNumber] = useState('');
   const [ewayValidUntil, setEwayValidUntil] = useState('');
@@ -186,14 +188,17 @@ export default function WaybillDetailsPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Delete waybill ${waybill.waybill_number}? This will also delete the payment record and cannot be undone.`)) return;
+  const executeDelete = async () => {
     try {
       await deleteWaybill(id);
       navigate('/waybills');
     } catch (err) {
-      alert('Failed to delete waybill');
+      alert(err?.response?.data?.error || err?.message || 'Failed to delete waybill');
     }
+  };
+
+  const handleDelete = () => {
+    setShowDeleteModal(true);
   };
 
   const handleDownloadPdf = async (isDuplicate = false) => {
@@ -250,6 +255,26 @@ export default function WaybillDetailsPage() {
             </button>
           </div>
           <p className="text-slate-400 mt-1">Booked on {new Date(waybill.booking_date).toLocaleDateString('en-IN')}</p>
+          {/* Trip assignment status */}
+          {waybill.stop_item?.stop && (() => {
+            const stop = waybill.stop_item.stop;
+            const tripId = stop.trip?.id;
+            const stopSeq = stop.sequence;
+            const totalStops = stop.trip?._count?.stops ?? '?';
+            return (
+              <div className="mt-2">
+                <a
+                  href={`/trips/${tripId}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-medium hover:bg-cyan-500/20 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  On trip #{tripId?.slice(0, 8)} — stop {stopSeq} of {totalStops}
+                </a>
+              </div>
+            );
+          })()}
         </div>
         {/* Action Buttons */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -857,6 +882,20 @@ export default function WaybillDetailsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Delete Waybill"
+        message={`Are you sure you want to delete waybill ${waybill.waybill_number}?\n\nThis will permanently remove the waybill, payment record, and associated tracking history.`}
+        confirmText="Delete Waybill"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={() => {
+          setShowDeleteModal(false);
+          executeDelete();
+        }}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }

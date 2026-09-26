@@ -154,11 +154,22 @@ export default function StaffDetailsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">{staff.name}</h1>
-              <div className="flex items-center gap-3 mt-1.5">
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                 <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 capitalize">
                   {staff.role.replace('_', ' ')}
                 </span>
                 <span className="text-sm text-slate-400">Staff ID: {staff.id.split('-')[0]}</span>
+                {user?.role === 'admin' && (
+                  <Link
+                    to={`/users?search=${encodeURIComponent(staff.phone || staff.name)}`}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors"
+                  >
+                    Manage login access
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
