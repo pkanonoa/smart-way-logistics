@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createWaybill } from '../api/waybillApi';
 import CompanyAutocomplete from '../components/CompanyAutocomplete';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -251,6 +252,7 @@ export default function NewBookingPage({ embedded = false }) {
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
   const [createdWaybill, setCreatedWaybill] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const grandTotal = sum(form.freight, form.handling_charges, form.sgst, form.cgst, form.igst);
 
@@ -279,18 +281,7 @@ export default function NewBookingPage({ embedded = false }) {
     return e;
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-
-    if (grandTotal >= 50000 && !form.eway_bill_number.trim()) {
-      const msg = `This shipment is ${INR(grandTotal)}, which requires an e-way bill under GST rules.\n\nNo e-way bill number has been entered.\n\nContinue anyway?`;
-      if (!window.confirm(msg)) {
-        return;
-      }
-    }
-
+  async function executeSubmit() {
     setLoading(true);
     try {
       const waybill = await createWaybill({
@@ -320,6 +311,19 @@ export default function NewBookingPage({ embedded = false }) {
         'Failed to create waybill'
       );
     } finally { setLoading(false); }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    if (grandTotal >= 50000 && !form.eway_bill_number.trim()) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    executeSubmit();
   }
 
   if (createdWaybill) {
@@ -647,6 +651,22 @@ export default function NewBookingPage({ embedded = false }) {
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="E-Way Bill Recommended"
+        message={`This shipment grand total is ${INR(grandTotal)}, which requires an E-Way Bill under GST regulations.\n\nNo E-Way Bill number has been entered for this booking.`}
+        confirmText="Proceed Without E-Way Bill"
+        cancelText="Add E-Way Bill"
+        type="warning"
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          executeSubmit();
+        }}
+        onCancel={() => {
+          setShowConfirmModal(false);
+        }}
+      />
     </div>
   );
 }
