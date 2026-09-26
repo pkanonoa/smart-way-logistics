@@ -483,33 +483,46 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
 
     const isDuplicate = req.query.copy === 'duplicate';
+    const isHtml = req.query.format === 'html';
     const html = generateWaybillHtml({ ...waybill, eway_bill_required: parseFloat(waybill.grand_total) >= EWAY_BILL_THRESHOLD }, isDuplicate);
 
-    // Launch Puppeteer and render PDF
-    const puppeteer = require('puppeteer');
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
-    });
-    await browser.close();
+    if (isHtml) {
+      const printHtml = html.replace('</body>', '<script>window.onload = function() { window.print(); };</script></body>');
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(printHtml);
+    }
 
-    const filename = isDuplicate
-      ? `${waybill.waybill_number}-DUPLICATE.pdf`
-      : `${waybill.waybill_number}.pdf`;
+    try {
+      const puppeteer = require('puppeteer');
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
+      });
+      await browser.close();
 
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length': pdfBuffer.length,
-    });
-    return res.end(pdfBuffer);
+      const filename = isDuplicate
+        ? `${waybill.waybill_number}-DUPLICATE.pdf`
+        : `${waybill.waybill_number}.pdf`;
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': pdfBuffer.length,
+      });
+      return res.end(pdfBuffer);
+    } catch (puppeteerErr) {
+      console.warn('[waybills:pdf] Puppeteer unavailable, falling back to printable HTML:', puppeteerErr.message);
+      const printHtml = html.replace('</body>', '<script>window.onload = function() { window.print(); };</script></body>');
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(printHtml);
+    }
   } catch (err) {
     console.error('[waybills:pdf]', err);
     return res.status(500).json({ error: 'Failed to generate PDF' });
