@@ -120,6 +120,50 @@ router.post('/', requireRole('admin', 'staff'), [
         paymentData.status = 'pending';
       }
 
+      // Auto-resolve or register sender company
+      let resolvedSenderCompanyId = sender_company_id || null;
+      if (!resolvedSenderCompanyId && consignor_name && consignor_name.trim()) {
+        try {
+          const comp = await tx.company.upsert({
+            where: { name: consignor_name.trim() },
+            update: {
+              ...(consignor_address ? { address: consignor_address.trim() } : {}),
+              ...(consignor_contact ? { phone: consignor_contact.trim() } : {}),
+            },
+            create: {
+              name: consignor_name.trim(),
+              address: consignor_address ? consignor_address.trim() : null,
+              phone: consignor_contact ? consignor_contact.trim() : null,
+            },
+          });
+          resolvedSenderCompanyId = comp.id;
+        } catch (e) {
+          console.warn('Failed to upsert sender company:', e.message);
+        }
+      }
+
+      // Auto-resolve or register receiver company
+      let resolvedReceiverCompanyId = receiver_company_id || null;
+      if (!resolvedReceiverCompanyId && consignee_name && consignee_name.trim()) {
+        try {
+          const comp = await tx.company.upsert({
+            where: { name: consignee_name.trim() },
+            update: {
+              ...(consignee_address ? { address: consignee_address.trim() } : {}),
+              ...(consignee_mobile ? { phone: consignee_mobile.trim() } : {}),
+            },
+            create: {
+              name: consignee_name.trim(),
+              address: consignee_address ? consignee_address.trim() : null,
+              phone: consignee_mobile ? consignee_mobile.trim() : null,
+            },
+          });
+          resolvedReceiverCompanyId = comp.id;
+        } catch (e) {
+          console.warn('Failed to upsert receiver company:', e.message);
+        }
+      }
+
       const waybill_number = await nextWaybillNumber(tx);
       return tx.waybill.create({
         data: {
@@ -129,8 +173,8 @@ router.post('/', requireRole('admin', 'staff'), [
           consignor_contact: consignor_contact?.trim() || '',
           consignor_address: consignor_address.trim(),
           consignor_gst: consignor_gst?.trim() || null,
-          sender_company_id: sender_company_id || null,
-          receiver_company_id: receiver_company_id || null,
+          sender_company_id: resolvedSenderCompanyId,
+          receiver_company_id: resolvedReceiverCompanyId,
           ...(assigned_staff_ids && assigned_staff_ids.length > 0 && {
             assigned_staff: {
               connect: assigned_staff_ids.map(id => ({ id }))

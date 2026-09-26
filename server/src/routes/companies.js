@@ -4,15 +4,27 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const GST_REGEX = /\b[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b/i;
+function extractGst(explicitGst, addressText) {
+  if (explicitGst && explicitGst.trim()) return explicitGst.trim();
+  if (addressText) {
+    const match = addressText.match(GST_REGEX);
+    if (match) return match[0];
+  }
+  return '';
+}
+
 // GET /api/companies
 router.get('/', authenticateToken, requireRole('admin', 'staff', 'accountant', 'viewer'), async (req, res) => {
   try {
     const { search } = req.query;
+    const q = typeof search === 'string' ? search.trim() : '';
+
     let where = {};
-    if (search) {
+    if (q) {
       where = {
         name: {
-          contains: search,
+          contains: q,
           mode: 'insensitive',
         },
       };
@@ -20,8 +32,109 @@ router.get('/', authenticateToken, requireRole('admin', 'staff', 'accountant', '
     const companies = await prisma.company.findMany({
       where,
       orderBy: { name: 'asc' },
+      take: 60,
     });
-    res.json(companies);
+
+    // Also search previous waybill parties (both consignors and consignees)
+    const waybillConsignors = await prisma.waybill.findMany({
+      where: q ? {
+        OR: [
+          { consignor_name: { contains: q, mode: 'insensitive' } },
+          { consignor_contact: { contains: q, mode: 'insensitive' } }
+        ]
+      } : { consignor_name: { not: null } },
+      select: {
+        consignor_name: true,
+        consignor_contact: true,
+        consignor_address: true,
+        consignor_gst: true,
+      },
+      distinct: ['consignor_name'],
+      orderBy: { created_at: 'desc' },
+      take: 30,
+    });
+
+    const waybillConsignees = await prisma.waybill.findMany({
+      where: q ? {
+        OR: [
+          { consignee_name: { contains: q, mode: 'insensitive' } },
+          { consignee_mobile: { contains: q, mode: 'insensitive' } }
+        ]
+      } : { consignee_name: { not: null } },
+      select: {
+        consignee_name: true,
+        consignee_mobile: true,
+        consignee_address: true,
+        consignee_gst: true,
+      },
+      distinct: ['consignee_name'],
+      orderBy: { created_at: 'desc' },
+      take: 30,
+    });
+
+    const map = new Map();
+    for (const c of companies) {
+      if (!c.name) continue;
+      const key = c.name.toLowerCase().trim();
+      const gst = extractGst(null, c.address);
+      map.set(key, {
+        id: c.id,
+        name: c.name.trim(),
+        district: c.district || '',
+        phone: c.phone || '',
+        contact_person: '',
+        address: c.address || '',
+        gst: gst || '',
+      });
+    }
+
+    for (const wc of waybillConsignors) {
+      if (!wc.consignor_name) continue;
+      const key = wc.consignor_name.toLowerCase().trim();
+      const gst = extractGst(wc.consignor_gst, wc.consignor_address);
+      if (map.has(key)) {
+        const item = map.get(key);
+        if (!item.address && wc.consignor_address) item.address = wc.consignor_address;
+        if (!item.phone && wc.consignor_contact) item.phone = wc.consignor_contact;
+        if (!item.contact_person && wc.consignor_contact) item.contact_person = wc.consignor_contact;
+        if (!item.gst && gst) item.gst = gst;
+      } else {
+        map.set(key, {
+          id: null,
+          name: wc.consignor_name.trim(),
+          district: '',
+          phone: wc.consignor_contact || '',
+          contact_person: wc.consignor_contact || '',
+          address: wc.consignor_address || '',
+          gst: gst || '',
+        });
+      }
+    }
+
+    for (const wc of waybillConsignees) {
+      if (!wc.consignee_name) continue;
+      const key = wc.consignee_name.toLowerCase().trim();
+      const gst = extractGst(wc.consignee_gst, wc.consignee_address);
+      if (map.has(key)) {
+        const item = map.get(key);
+        if (!item.address && wc.consignee_address) item.address = wc.consignee_address;
+        if (!item.phone && wc.consignee_mobile) item.phone = wc.consignee_mobile;
+        if (!item.gst && gst) item.gst = gst;
+      } else {
+        map.set(key, {
+          id: null,
+          name: wc.consignee_name.trim(),
+          district: '',
+          phone: wc.consignee_mobile || '',
+          contact_person: '',
+          address: wc.consignee_address || '',
+          gst: gst || '',
+        });
+      }
+    }
+
+    const merged = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    res.json(merged);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch companies' });

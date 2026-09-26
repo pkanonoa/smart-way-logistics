@@ -253,25 +253,35 @@ export default function EditBookingPage() {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Business Name" required error={errors.consignor_name}>
               <CompanyAutocomplete
+                name="consignor_name"
                 value={form.consignor_name}
+                partyType="consignor"
                 onChange={(e) => {
-                  setForm(prev => ({ ...prev, consignor_name: e.target ? e.target.value : e.target }));
-                  if (e.target && errors.consignor_name) setErrors(prev => ({ ...prev, consignor_name: null }));
+                  const val = e.target ? e.target.value : e.target;
+                  setForm(prev => ({ ...prev, consignor_name: val }));
+                  if (errors.consignor_name) setErrors(prev => ({ ...prev, consignor_name: null }));
                 }}
                 onSelectCompany={(company) => {
                   if (company) {
                     setForm(prev => ({
                       ...prev,
                       consignor_name: company.name,
-                      consignor_contact: company.phone || prev.consignor_contact,
+                      consignor_contact: company.contact_person || company.phone || prev.consignor_contact,
                       consignor_address: company.address || prev.consignor_address,
+                      consignor_gst: company.gst || prev.consignor_gst,
                       sender_company_id: company.id
+                    }));
+                    setErrors(prev => ({
+                      ...prev,
+                      consignor_name: null,
+                      consignor_address: null,
+                      consignor_contact: null
                     }));
                   } else {
                     setForm(prev => ({ ...prev, sender_company_id: null }));
                   }
                 }}
-                placeholder="Sender company name"
+                placeholder="Sender company name (search or type)"
                 className={inputCls(errors.consignor_name)}
               />
             </Field>
@@ -306,25 +316,35 @@ export default function EditBookingPage() {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Business Name" required error={errors.consignee_name}>
               <CompanyAutocomplete
+                name="consignee_name"
                 value={form.consignee_name}
+                partyType="consignee"
                 onChange={(e) => {
-                  setForm(prev => ({ ...prev, consignee_name: e.target ? e.target.value : e.target }));
-                  if (e.target && errors.consignee_name) setErrors(prev => ({ ...prev, consignee_name: null }));
+                  const val = e.target ? e.target.value : e.target;
+                  setForm(prev => ({ ...prev, consignee_name: val }));
+                  if (errors.consignee_name) setErrors(prev => ({ ...prev, consignee_name: null }));
                 }}
                 onSelectCompany={(company) => {
                   if (company) {
                     setForm(prev => ({
                       ...prev,
                       consignee_name: company.name,
-                      consignee_mobile: company.phone || prev.consignee_mobile,
+                      consignee_mobile: company.phone || company.contact_person || prev.consignee_mobile,
                       consignee_address: company.address || prev.consignee_address,
+                      consignee_gst: company.gst || prev.consignee_gst,
                       receiver_company_id: company.id
+                    }));
+                    setErrors(prev => ({
+                      ...prev,
+                      consignee_name: null,
+                      consignee_address: null,
+                      consignee_mobile: null
                     }));
                   } else {
                     setForm(prev => ({ ...prev, receiver_company_id: null }));
                   }
                 }}
-                placeholder="Receiver company name"
+                placeholder="Receiver company name (search or type)"
                 className={inputCls(errors.consignee_name)}
               />
             </Field>
