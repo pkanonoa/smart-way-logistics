@@ -60,6 +60,9 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) =>
   res.status(200).json({ status: 'ok', service: 'Smart Way Logistics API', timestamp: new Date().toISOString() })
 );
+app.get('/api/health', (req, res) =>
+  res.status(200).json({ status: 'ok', service: 'Smart Way Logistics API', timestamp: new Date().toISOString() })
+);
 
 app.use('/api/auth',       authRoutes);
 app.use('/api/public',    publicRoutes); // No auth
