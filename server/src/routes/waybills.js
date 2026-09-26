@@ -197,7 +197,7 @@ router.get('/', async (req, res) => {
             }
           }
         }
-      },
+      }
     });
     return res.status(200).json({ waybills: waybills.map(mapWaybillResponse) });
   } catch (err) {
@@ -205,29 +205,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Helper: Find waybill by UUID or waybill_number
+async function findWaybillByIdOrNumber(param, include = undefined) {
+  if (!param) return null;
+  return await prisma.waybill.findFirst({
+    where: {
+      OR: [
+        { id: param },
+        { waybill_number: param }
+      ]
+    },
+    ...(include ? { include } : {})
+  });
+}
+
 // ─── GET /api/waybills/:id ────────────────────────────────────────────────────
 
 router.get('/:id', async (req, res) => {
   try {
-    const waybill = await prisma.waybill.findUnique({
-      where: { id: req.params.id },
-      include: {
-        assigned_staff: true,
-        creator: { select: { id: true, name: true } },
-        payment: true,
-        daily_collection: { include: { staff: true, helper: true } },
-        stop_item: {
-          include: {
-            stop: {
-              select: {
-                sequence: true,
-                trip_id: true,
-                trip: { select: { id: true, _count: { select: { stops: true } } } }
-              }
+    const waybill = await findWaybillByIdOrNumber(req.params.id, {
+      assigned_staff: true,
+      creator: { select: { id: true, name: true } },
+      payment: true,
+      daily_collection: { include: { staff: true, helper: true } },
+      stop_item: {
+        include: {
+          stop: {
+            select: {
+              sequence: true,
+              trip_id: true,
+              trip: { select: { id: true, _count: { select: { stops: true } } } }
             }
           }
         }
-      },
+      }
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
     return res.status(200).json({ waybill: mapWaybillResponse(waybill) });
@@ -240,8 +251,9 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
   try {
-    const existing = await prisma.waybill.findUnique({ where: { id: req.params.id }, include: { payment: true } });
+    const existing = await findWaybillByIdOrNumber(req.params.id, { payment: true });
     if (!existing) return res.status(404).json({ error: 'Waybill not found' });
+    const targetId = existing.id;
 
     const f = (k, d) => req.body[k] !== undefined ? parseFloat(req.body[k]) : parseFloat(d);
     const freight = f('freight', existing.freight), handling = f('handling_charges', existing.handling_charges);
@@ -260,7 +272,7 @@ router.put('/:id', requireRole('admin', 'staff'), async (req, res) => {
       consignor_name, consignor_contact, consignor_address, consignor_gst, assigned_staff_ids } = req.body;
 
     const waybill = await prisma.waybill.update({
-      where: { id: req.params.id },
+      where: { id: targetId },
       data: {
         ...(from_location && { from_location }), ...(to_location && { to_location }),
         ...(consignor_name && { consignor_name }), ...(consignor_contact && { consignor_contact }),
@@ -325,11 +337,9 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
   const { status, location, remarks, confirmPaymentCollected, payment_method, payment_status } = req.body;
 
   try {
-    const existing = await prisma.waybill.findUnique({
-      where: { id: req.params.id },
-      include: { payment: true }
-    });
+    const existing = await findWaybillByIdOrNumber(req.params.id, { payment: true });
     if (!existing) return res.status(404).json({ error: 'Waybill not found' });
+    const targetId = existing.id;
 
     const isDelivered = status === 'delivered';
     const isTopayPending = existing.payment_mode === 'topay' && existing.payment?.status === 'pending';
@@ -339,7 +349,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       // 1. Add tracking entry
       const tracking = await tx.parcelTracking.create({
         data: {
-          waybill_id: existing.id,
+          waybill_id: targetId,
           status,
           location: location?.trim() || null,
           remarks: remarks?.trim() || null,
@@ -349,7 +359,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
 
       // 2. Update waybill status
       const waybill = await tx.waybill.update({
-        where: { id: existing.id },
+        where: { id: targetId },
         data: { status },
         include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } }
       });
@@ -358,7 +368,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
       if ((confirmPaymentCollected && isTopayPending) || payment_status) {
         const finalStatus = payment_status || 'paid';
         await tx.payment.upsert({
-          where: { waybill_id: existing.id },
+          where: { waybill_id: targetId },
           update: {
             status: finalStatus,
             ...(finalStatus === 'paid' ? {
@@ -376,7 +386,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
             })
           },
           create: {
-            waybill_id: existing.id,
+            waybill_id: targetId,
             amount: existing.grand_total,
             status: finalStatus,
             ...(finalStatus === 'paid' ? {
@@ -387,7 +397,7 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
             } : {})
           }
         });
-        waybill.payment = await tx.payment.findUnique({ where: { waybill_id: existing.id } });
+        waybill.payment = await tx.payment.findUnique({ where: { waybill_id: targetId } });
       }
 
       return { waybill, tracking };
@@ -411,11 +421,11 @@ router.post('/:id/status', requireRole('admin', 'staff'), [
 
 router.get('/:id/tracking', async (req, res) => {
   try {
-    const waybill = await prisma.waybill.findUnique({ where: { id: req.params.id }, select: { id: true } });
-    if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
+    const existing = await findWaybillByIdOrNumber(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Waybill not found' });
 
     const history = await prisma.parcelTracking.findMany({
-      where: { waybill_id: req.params.id },
+      where: { waybill_id: existing.id },
       orderBy: { timestamp: 'asc' },
       include: { user: { select: { id: true, name: true } } }
     });
@@ -424,20 +434,20 @@ router.get('/:id/tracking', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch tracking' });
   }
 });
+
 // ─── DELETE /api/waybills/:id ─────────────────────────────────────────────────
 
 router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
   try {
-    const existing = await prisma.waybill.findUnique({
-      where: { id: req.params.id },
-      include: { payment: true },
-    });
+    const existing = await findWaybillByIdOrNumber(req.params.id, { payment: true });
     if (!existing) return res.status(404).json({ error: 'Waybill not found' });
+
+    const targetId = existing.id;
 
     await prisma.$transaction(async (tx) => {
       // 1. Disconnect assigned staff & daily collection references
       await tx.waybill.update({
-        where: { id: req.params.id },
+        where: { id: targetId },
         data: {
           assigned_staff: { set: [] },
           daily_collection_id: null
@@ -445,19 +455,19 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
       });
 
       // 2. Delete associated StopItem if assigned to a trip
-      await tx.stopItem.deleteMany({ where: { waybill_id: req.params.id } });
+      await tx.stopItem.deleteMany({ where: { waybill_id: targetId } });
 
       // 3. Delete associated ParcelTracking history
-      await tx.parcelTracking.deleteMany({ where: { waybill_id: req.params.id } });
+      await tx.parcelTracking.deleteMany({ where: { waybill_id: targetId } });
 
       // 4. Delete associated Payment record
-      await tx.payment.deleteMany({ where: { waybill_id: req.params.id } });
+      await tx.payment.deleteMany({ where: { waybill_id: targetId } });
 
       // 5. Delete the waybill
-      await tx.waybill.delete({ where: { id: req.params.id } });
+      await tx.waybill.delete({ where: { id: targetId } });
     });
 
-    await logActivity(req, 'waybill', 'DELETE', req.params.id, `Deleted waybill ${existing.waybill_number}`);
+    await logActivity(req, 'waybill', 'DELETE', targetId, `Deleted waybill ${existing.waybill_number}`);
 
     return res.status(200).json({ message: 'Waybill deleted successfully' });
   } catch (err) {
@@ -471,14 +481,11 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
 
 router.get('/:id/pdf', authenticateToken, async (req, res) => {
   try {
-    const waybill = await prisma.waybill.findUnique({
-      where: { id: req.params.id },
-      include: {
-        assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } },
-        creator: { select: { id: true, name: true } },
-        payment: true,
-        daily_collection: { include: { staff: true, helper: true } },
-      },
+    const waybill = await findWaybillByIdOrNumber(req.params.id, {
+      assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } },
+      creator: { select: { id: true, name: true } },
+      payment: true,
+      daily_collection: { include: { staff: true, helper: true } },
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
 
