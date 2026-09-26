@@ -1,8 +1,15 @@
 const express = require('express');
 const cors    = require('cors');
 const dotenv  = require('dotenv');
+const path    = require('path');
 
 dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production-use-a-long-random-string';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres.uvdhlerhureaqvzbpwwv:jnwOcqAgVLNcx0us@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
+process.env.DIRECT_URL = process.env.DIRECT_URL || process.env.DATABASE_URL;
 
 const authRoutes       = require('./routes/auth');
 const staffRoutes      = require('./routes/staff');
@@ -40,6 +47,14 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Vercel serverless rewrite URL normalization middleware
+app.use((req, res, next) => {
+  if (!req.url.startsWith('/api') && req.url !== '/health' && !req.url.startsWith('/health')) {
+    req.url = '/api' + req.url;
+  }
+  next();
+});
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) =>
