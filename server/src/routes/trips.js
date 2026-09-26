@@ -61,7 +61,7 @@ router.get('/badge-counts', requireRole('admin', 'staff'), async (req, res) => {
   try {
     const [unassigned, draftTrips] = await Promise.all([
       prisma.waybill.count({ where: { stop_item: null, status: { not: 'delivered' } } }),
-      prisma.trip.count({ where: { status: { in: ['draft', 'open'] } } }),
+      prisma.trip.count({ where: { status: { in: ['draft', 'in_progress'] } } }),
     ]);
     return res.json({ unassigned, draftTrips });
   } catch (err) {
