@@ -39,10 +39,23 @@ function mapWaybillResponse(waybill) {
 }
 
 async function nextWaybillNumber(tx) {
+  // Ensure the counter row exists
   const existing = await tx.waybillCounter.findUnique({ where: { id: 1 } });
   if (!existing) await tx.waybillCounter.create({ data: { id: 1, seq: 500 } });
-  const updated = await tx.waybillCounter.update({ where: { id: 1 }, data: { seq: { increment: 1 } } });
-  return `SWL${updated.seq}`;
+
+  // Keep incrementing until we find a waybill_number that isn't already taken
+  // (guards against counter drift from cancelled transactions or manual DB edits)
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const updated = await tx.waybillCounter.update({
+      where: { id: 1 },
+      data: { seq: { increment: 1 } },
+    });
+    const candidate = `SWL${updated.seq}`;
+    const collision = await tx.waybill.findUnique({ where: { waybill_number: candidate }, select: { id: true } });
+    if (!collision) return candidate;
+    // collision — loop again to grab the next seq
+  }
+  throw new Error('Unable to allocate a unique waybill number after 20 attempts');
 }
 
 // ─── POST /api/waybills ───────────────────────────────────────────────────────
