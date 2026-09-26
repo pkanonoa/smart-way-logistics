@@ -444,28 +444,21 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
 
     const targetId = existing.id;
 
-    await prisma.$transaction(async (tx) => {
-      // 1. Disconnect assigned staff & daily collection references
-      await tx.waybill.update({
+    await prisma.$transaction([
+      prisma.waybill.update({
         where: { id: targetId },
         data: {
           assigned_staff: { set: [] },
-          daily_collection_id: null
+          daily_collection_id: null,
+          sender_company_id: null,
+          receiver_company_id: null
         }
-      });
-
-      // 2. Delete associated StopItem if assigned to a trip
-      await tx.stopItem.deleteMany({ where: { waybill_id: targetId } });
-
-      // 3. Delete associated ParcelTracking history
-      await tx.parcelTracking.deleteMany({ where: { waybill_id: targetId } });
-
-      // 4. Delete associated Payment record
-      await tx.payment.deleteMany({ where: { waybill_id: targetId } });
-
-      // 5. Delete the waybill
-      await tx.waybill.delete({ where: { id: targetId } });
-    });
+      }),
+      prisma.stopItem.deleteMany({ where: { waybill_id: targetId } }),
+      prisma.parcelTracking.deleteMany({ where: { waybill_id: targetId } }),
+      prisma.payment.deleteMany({ where: { waybill_id: targetId } }),
+      prisma.waybill.delete({ where: { id: targetId } })
+    ]);
 
     await logActivity(req, 'waybill', 'DELETE', targetId, `Deleted waybill ${existing.waybill_number}`);
 
