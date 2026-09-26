@@ -435,16 +435,25 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Waybill not found' });
 
     await prisma.$transaction(async (tx) => {
-      // 1. Delete associated StopItem if assigned to a trip
+      // 1. Disconnect assigned staff & daily collection references
+      await tx.waybill.update({
+        where: { id: req.params.id },
+        data: {
+          assigned_staff: { set: [] },
+          daily_collection_id: null
+        }
+      });
+
+      // 2. Delete associated StopItem if assigned to a trip
       await tx.stopItem.deleteMany({ where: { waybill_id: req.params.id } });
 
-      // 2. Delete associated ParcelTracking history
+      // 3. Delete associated ParcelTracking history
       await tx.parcelTracking.deleteMany({ where: { waybill_id: req.params.id } });
 
-      // 3. Delete associated Payment record
+      // 4. Delete associated Payment record
       await tx.payment.deleteMany({ where: { waybill_id: req.params.id } });
 
-      // 4. Delete the waybill
+      // 5. Delete the waybill
       await tx.waybill.delete({ where: { id: req.params.id } });
     });
 
@@ -454,7 +463,7 @@ router.delete('/:id', requireRole('admin', 'staff'), async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Waybill not found' });
     console.error('[waybills:delete]', err);
-    return res.status(500).json({ error: 'Failed to delete waybill' });
+    return res.status(500).json({ error: err.response?.data?.error || err.message || 'Failed to delete waybill' });
   }
 });
 
