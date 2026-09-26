@@ -48,23 +48,24 @@ async function nextWaybillNumber(tx) {
 // ─── POST /api/waybills ───────────────────────────────────────────────────────
 
 router.post('/', requireRole('admin', 'staff'), [
-  body('from_location').trim().notEmpty(),
-  body('to_location').trim().notEmpty(),
+  body('from_location').trim().notEmpty().withMessage('From location is required'),
+  body('to_location').trim().notEmpty().withMessage('To location is required'),
   body('consignor_name').trim().notEmpty().withMessage('Consignor name (Business Name) is required'),
   body('consignor_contact').optional({ checkFalsy: true }).trim(),
   body('consignor_address').trim().notEmpty().withMessage('Consignor address (Pickup Address) is required'),
   body('assigned_staff_ids').optional().isArray(),
-  body('consignee_name').trim().notEmpty(),
+  body('consignee_name').trim().notEmpty().withMessage('Consignee name is required'),
   body('consignee_mobile')
     .optional({ checkFalsy: true })
     .trim()
-    .matches(/^[6-9]\d{9}$/).withMessage('Consignee mobile must be a valid 10-digit number'),
-  body('consignee_address').trim().notEmpty(),
-  body('no_of_packages').isInt({ min: 1 }),
-  body('package_type').trim().notEmpty(),
+    .custom((val) => !val || /^[0-9+\s-]{7,15}$/.test(val))
+    .withMessage('Consignee mobile must be a valid phone number'),
+  body('consignee_address').trim().notEmpty().withMessage('Consignee address is required'),
+  body('no_of_packages').isInt({ min: 1 }).withMessage('Number of packages must be at least 1'),
+  body('package_type').trim().notEmpty().withMessage('Package type is required'),
   body('weight').optional().isFloat({ min: 0 }),
-  body('freight').isFloat({ min: 0 }),
-  body('payment_mode').isIn(['paid', 'topay', 'credit']),
+  body('freight').isFloat({ min: 0 }).withMessage('Freight must be a valid number >= 0'),
+  body('payment_mode').isIn(['paid', 'topay', 'credit']).withMessage('Payment mode must be paid, topay, or credit'),
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -180,7 +181,23 @@ router.get('/', async (req, res) => {
         { booking_date: 'desc' },
         { created_at: 'desc' }
       ],
-      include: { assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } }, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
+      include: {
+        assigned_staff: { select: { id: true, name: true, phone: true, role: true, role_other_specify: true } },
+        creator: { select: { id: true, name: true } },
+        payment: true,
+        daily_collection: { include: { staff: true, helper: true } },
+        stop_item: {
+          include: {
+            stop: {
+              select: {
+                sequence: true,
+                trip_id: true,
+                trip: { select: { id: true, _count: { select: { stops: true } } } }
+              }
+            }
+          }
+        }
+      },
     });
     return res.status(200).json({ waybills: waybills.map(mapWaybillResponse) });
   } catch (err) {
@@ -194,7 +211,23 @@ router.get('/:id', async (req, res) => {
   try {
     const waybill = await prisma.waybill.findUnique({
       where: { id: req.params.id },
-      include: { assigned_staff: true, creator: { select: { id: true, name: true } }, payment: true, daily_collection: { include: { staff: true, helper: true } } },
+      include: {
+        assigned_staff: true,
+        creator: { select: { id: true, name: true } },
+        payment: true,
+        daily_collection: { include: { staff: true, helper: true } },
+        stop_item: {
+          include: {
+            stop: {
+              select: {
+                sequence: true,
+                trip_id: true,
+                trip: { select: { id: true, _count: { select: { stops: true } } } }
+              }
+            }
+          }
+        }
+      },
     });
     if (!waybill) return res.status(404).json({ error: 'Waybill not found' });
     return res.status(200).json({ waybill: mapWaybillResponse(waybill) });

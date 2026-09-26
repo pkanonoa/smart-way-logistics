@@ -269,8 +269,8 @@ export default function NewBookingPage({ embedded = false }) {
     if (!form.consignor_name.trim()) e.consignor_name = 'Required';
     if (!form.consignor_address.trim()) e.consignor_address = 'Required';
     if (!form.consignee_name.trim()) e.consignee_name = 'Required';
-    if (form.consignee_mobile.trim() && !/^[6-9]\d{9}$/.test(form.consignee_mobile.trim())) {
-      e.consignee_mobile = 'Must be a valid 10-digit number';
+    if (form.consignee_mobile.trim() && !/^[0-9+\s-]{7,15}$/.test(form.consignee_mobile.trim())) {
+      e.consignee_mobile = 'Must be a valid contact number (7-15 digits)';
     }
     if (!form.consignee_address.trim()) e.consignee_address = 'Required';
     if (!form.package_type.trim()) e.package_type = 'Required';
@@ -309,9 +309,14 @@ export default function NewBookingPage({ embedded = false }) {
       });
       setCreatedWaybill(waybill);
     } catch (err) {
+      const respErrs = err?.response?.data?.errors;
+      const detailMsg = Array.isArray(respErrs)
+        ? respErrs.map(e => e.msg || e.message).filter(Boolean).join('. ')
+        : null;
       setServerError(
         err?.response?.data?.error ||
-        err?.response?.data?.errors?.[0]?.msg ||
+        detailMsg ||
+        err?.message ||
         'Failed to create waybill'
       );
     } finally { setLoading(false); }
